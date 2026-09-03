@@ -1,0 +1,424 @@
+ago. 28, 2026
+Painel de crédito - integrações - Transcrição
+00:00:00
+
+Estefany Gomes: Eh, e aí a gente tá com uma iniciativa aqui do nosso lado, porque a gente hoje utiliza o Hubspot, a o para fazer todo o nosso funil de esteira. Então, como que funciona? Dentro do Hubspot tem todas as nossas operações na esteira do time comercial e na esteira do time operacional. Então, basicamente, o time comercial ali eh tá falando com o cliente, quando ele fecha, ele passa por uma coluninha. Vou apresentar tudo que eu tô falando, tá? Só para contextualizar. passa por uma coluninha ali de análise interna, que a partir disso a Lavínia segue com o fluxo operacional para mandar essa operação pro fundo. Eh, essa essa comunicação com fundo hoje é toda feita via e-mail e WhatsApp. Pra gente é muito ruim, principalmente quando a gente tem um nível de operações elevadas, porque fica aquela corrente de e-mail ali, a desorganização. Eh, então a gente teve uma ideia de replicar, digamos assim, a etapa do Hubspot que envolve o nosso fundo. Por quê? porque o hubot não é uma ferramenta flexível e lá tem todas as nossas informações, a gente não poderia compartilhar.
+
+
+00:00:57
+
+Estefany Gomes: Eh, então a ideia é a gente usar um fluxo bem próximo que a gente desenhou do Hubspot, só que com o acesso ali configurável de permissão para disponibilidade pro nosso fundo e melhorar esse problema que a gente tem de eh de visualização. Pera aí que eu compartilhei a tela errada. Só um segundo. Agora foi. Vamos vendo aí.
+Matheus Torquato: Eh É,
+Estefany Gomes: Boa. Eh, esse aqui é o funil, é o hubspot que eu mencionei, tá? Então aqui é a etapa do comercial, oportunidade, contato,
+Matheus Torquato: aguenta.
+Estefany Gomes: follow, negociação. A partir disso, segue pra nossa etapa operacional, que a gente chama. a gente precisa manter utilizando o hubspot, porque é aqui que a gente controla o nosso funil, se o cliente eh chegou até crédito concedido. Eh, então essa etapa aqui a gente replicou no lovable para fornecer isso pros nossos, pro nosso fundo, né, pro nosso fornecedor. Vou te mostrar, ela ainda não tá em produção. Eh, a gente criou essa etapa aqui, operações informalizações, que copia basicamente todas aquelas etapas do Hubspot que eu mostrei, tá?
+
+
+00:02:07
+
+Estefany Gomes: Recolhimento de documentações, análise fornecedor, guardando o contrato, contrato emitido, contrato assinado. O que que a gente precisa do ter o apoio agora? A gente precisa conectar isso no Hubspot, porque senão vai ser mais uma ferramenta pra gente atualizar. Então, a ideia é que o Hubspot, quando vier uma eh uma um card para cá, aguardando o documento, ele possa ser replicado aqui. Nesse funil aqui, inclusive, eu nem coloquei o card de arrastar, porque a ideia é que seja tudo automatizado. Então, basicamente é isso, replicar para todas as etapas, tudo que atualiza lá, atualiza aqui. O mundo perfeito seria se a gente atualizasse alguma coisa que atualizasse lá também. Eu acho que isso não é possível. Aí você pode até ajudar a gente com teu conhecimento técnico aí, mas se tudo que tiver lá já for replicado aqui,
+Matheus Torquato: Uhum.
+Estefany Gomes: já é um grande ganho pra gente. O segundo ponto.
+Matheus Torquato: Mas vocês querem usar só uma ferramenta em vez de usar as duas, que uma vai ser mais para visualização ou você quer a partir de agora tipo meio que usar essa
+Estefany Gomes: É, a partir de agora, agora usar esse aqui.
+
+
+00:03:01
+
+Matheus Torquato: daí?
+Estefany Gomes: O Bispot hoje ele não faz muita coisa pra gente, tá? A única automação que tem é quando eu mando para análise fornecedor, ele manda o e-mail com a pasta. A pasta ela vai ficar aqui, só que o nosso time comercial, enfim, pela esteira lá de crédito e tudo lá tem um SLA, eu preciso que aquilo lá acompanhe também. Só que a ideia é usar aqui e as atualizações que ela fizer lá atualiza aqui, sabe?
+Matheus Torquato: Uhum. É, eu eu vejo eu vejo isso daí com um potencial grande paraa substituição do Hubpot,
+Estefany Gomes: Eh,
+Matheus Torquato: que daí a gente consegue construir uma ferramenta que vocês consigam usar tudo e o jeito que vocês quiserem. É claro que não dá para fazer isso agora porque é um trabalho gigantesco, mas eu já consigo se eu a gente depois a gente vai vou pedir para você olhar ali a parte de documentação da AP do Hubsport pra gente ver se ele conversa ida e volta ou só ido, entendeu? Mas aí a gente dá uma
+Estefany Gomes: boa, boa.
+Matheus Torquato: olhada
+Estefany Gomes: É, na verdade esse é o sonho, tá?
+
+
+00:03:55
+
+Estefany Gomes: Só que isso é um assunto sensível aqui dentro, mas todos porque você sabe, o Robspot é uma ferramenta caríssima,
+Matheus Torquato: não sei é um CM.
+Estefany Gomes: é uma ferramenta eh comercial,
+Matheus Torquato: Aham.
+Estefany Gomes: então enfim, só da gente ter isso aqui já é um ganho pra gente. O outro ponto é que como o fluxo é todo hoje é via e-mail pro time do nosso fundo,
+Matheus Torquato: Угу.
+Estefany Gomes: a gente queria manter isso para não ser uma coisa tão brusca ali. E também tem mais pessoas dentro do fundo que acompanha esses e-mails. Então, basicamente, mudou para uma etapa, chegar um e-mail simples para ele, olá, tem uma etapa nova para que ele não fique, não precisa acompanhar aqui todo o tempo, sabe? Ficar atualizando essa ferramenta do e-mail. Acho que talvez possa ser mais simples do que o Hubspot, mas é isso. Eh, como ele não tem uma notificação ainda, a ideia que tenha, mas que a gente consiga automatizar. Aqui até a gente até incluiu, ó, eh, destinatário do e-mail. Aí eu coloco aqui, ele testa.
+
+
+00:04:44
+
+Estefany Gomes: Não tá funcional ainda, tá? e-mail simulado para enviar um e-mail
+Matheus Torquato: Esse esse e-mail tem que ser enviado da do um comercial específico.
+Estefany Gomes: para
+Matheus Torquato: Esse é um cliente ou não? Eu eu eu tô meio tô meio perdido nisso,
+Estefany Gomes: não. Esse aqui é pro nosso fundo. A ideia é só, como eu falei, como o fluxo acontece via email para não ser uma coisa tão brusca assim,
+Matheus Torquato: tá?
+Estefany Gomes: sabe? Então na só para ele comunicar, via e-mail, aí ele entra aqui na ferramenta e sabe que tem uma uma até porque o fluxo disso aqui não é tão frequente, sabe? A gente tem cinco operação na semana, no máximo.
+Matheus Torquato: O e-mail que envia esse e-mail é um e-mail único ou são vários?
+Estefany Gomes: Não pode ser um e-mail único. A gente tem um e-mail, um grupo de e-mail que é o crédito PJ. Pode, a gente pode usar esse e-mail.
+Matheus Torquato: A gente pode vincular esse crédito PJ através do Gmail. Você clicar ali para quem se quiser enviar ele envia.
+
+
+00:05:32
+
+Matheus Torquato: Não tem problema. Dá para fazer
+Estefany Gomes: Boa.
+Matheus Torquato: assim,
+Estefany Gomes: É isso, na verdade, que a gente precisa de apoio, assim,
+Matheus Torquato: tá? Entra no Hubspot aí então para eu ver como é que é a questão de documentação e API.
+Estefany Gomes: eh,
+Matheus Torquato: Eh, provavelmente deve f Você quer falar mais alguma coisa? Perdão.
+Estefany Gomes: não, não. Pode me orientar aqui.
+Matheus Torquato: Não, eu não sei onde fica.
+Estefany Gomes: Você que manda,
+Matheus Torquato: a gente vai ter que dar uma caçada,
+Estefany Gomes: tá bom?
+Matheus Torquato: mas deixa fazer uma use inteiro. Vamos agora também.
+Estefany Gomes: É verdade. Ô Lavínia, na verdade você queria falar mais alguma coisa,
+Matheus Torquato: Po,
+Estefany Gomes: né?
+Matheus Torquato: po, pode perguntar enquanto eu vou olhando.
+Estefany Gomes: É, eu eu esqueci, mas acho que você tinha mais alguma coisa. Eu vou funcionar aqui também
+Lavínia Resende: Mateus, é uma figinha meio simples também,
+Estefany Gomes: compot.
+Lavínia Resende: não é muito a ver com esse funil que a tá apresentando.
+
+
+00:06:15
+
+Lavínia Resende: Essa é uma prioridade pra gente 100%, mas um outro passo que a gente queria é vincular os nossos notion no painel PJ. Na tela central a gente queria vincular os nossos OKRs e a gente internamente tentando descobrir que o nosso time de segurança,
+Estefany Gomes: Ah.
+Lavínia Resende: eles informaram que a permissão de MCP só pode ser concedida para N2. E é um pouco enviavel a gente pedir isso para N2. E aí conversando com o Henrique,
+Matheus Torquato: Eu
+Lavínia Resende: ele falou que talvez você conseguir apoiar a gente conectando esse Notion com o nosso painel para ele ir atualizando conforme atualiza o Notion. Você sabe se é
+Matheus Torquato: consigo tanto que o P tem uma uma um esquema parecido com o do Pedro,
+Lavínia Resende: possível?
+Matheus Torquato: ele atualiza conforme o Notion. Só que me repete isso do só o N2 pode ter acesso a esse indicador de OKR. Aí você
+Lavínia Resende: Não, só o N2 pode ter acesso ao MCP de vínculo do Notion.
+Matheus Torquato: falou,
+Estefany Gomes: Eh para fazer a integração.
+Lavínia Resende: Aí a gente não ia conseguir vincular porque a gente tinha
+
+
+00:07:06
+
+Estefany Gomes: Não é nem acesso à informação, é só para fazer a interação.
+Matheus Torquato: tá tá. É, se ele me passar integra, é que assim, como é que funciona o no? A integração do no que nem outros sistemas que eu pego o API e eu tenho acesso ao sistema inteiro, como se fosse um administrador do sistema. O Notion eu faço API por página. Então, dentro daquela página eu preciso pegar a PI vinculada aquela página, daí espelho aquela página onde eu quiser, entendeu? Então, se esse N2 tiver acesso a essa página, a gente cria pela conta dele e eu espero aqui para vocês, não tem problema.
+Lavínia Resende: Então você precisa precisa de um N2 com esse acesso.
+Matheus Torquato: Oi, deu uma cortada.
+Lavínia Resende: Você precisa de um N2 com esse
+Matheus Torquato: Na verdade, alguém que tem acesso a essa página que você quer espelhar,
+Lavínia Resende: acesso.
+Estefany Gomes: Ah,
+Matheus Torquato: não se é N2,
+Estefany Gomes: o acesso todo mundo tem ela.
+Matheus Torquato: se é tão tão bem mesmo.
+Estefany Gomes: O acesso é liberado a
+Lavínia Resende: É,
+Matheus Torquato: Se você tem acesso a essa
+
+
+00:07:52
+
+Lavínia Resende: só que a gente não consegue extrair dela,
+Estefany Gomes: página.
+Lavínia Resende: a gente só consegue visualizar.
+Matheus Torquato: página,
+Lavínia Resende: Éí, por isso que a gente precisava de alguém para tirar essa page lá de dentro, que parece que é só um MCP,
+Matheus Torquato: entendi.
+Lavínia Resende: que só N2
+Matheus Torquato: A gente pode ver se se dá se dá para fazer via pelo de vocês,
+Lavínia Resende: conseguiria.
+Matheus Torquato: senão a gente pega alguém que seja N2 ou N3 ou N1 ali, sei lá. N3 não, N1. Aí a gente pegando, vinculando,
+Estefany Gomes: Tá.
+Matheus Torquato: a gente só precisa dessa pessoa uns 10 minutos só pra gente fazer ali as configurações, eu pego e já era,
+Lavínia Resende: Beleza.
+Matheus Torquato: entendeu? Daí a gente pode espelhar ali,
+Lavínia Resende: Да.
+Matheus Torquato: só que daí você quer que todo mundo veja como é que é.
+Estefany Gomes: M.
+Matheus Torquato: E, é, é uma coisa até importante de eu perguntar. Esse painel que vocês estão fazendo, eh, todo mundo vai ter acesso esse painel a todas as informações.
+
+
+00:08:34
+
+Matheus Torquato: Vocês pensam que cada um vai ter um login ou vai ser um login único para todo mundo entrar ou cada um entra com o Gmail, com o Gmail da da mais, né? Porque assim, que nem o painel do Pedro lá que a gente que que eu construí, cada um tem o acesso ao usuário ali dentro que daí entra com seu Gmail da mais todos. Só que existe também lá dentro, que é geralmente acho Vocês não vão ver porque vocês são só usuário, mas tem o painel administrador que tem umas outras funções que são de gerência ali dentro que vocês nem vão ver. Então isso eu consigo setar por permissões, por login. Aí não sei se vocês querem ter essa hierarquia ou cada um vai eh vocês vão acessar no mesmo e-mail, sei
+Estefany Gomes: Legal. Não, isso aqui cada um tem um acesso,
+Matheus Torquato: lá.
+Estefany Gomes: tá? Eh, a o único acesso que a gente tá eh, configurando com mais afinco, digamos assim, é o time do fundo, que ele não é interno. O resto, todo mundo que vai usar é time interno. Então, as permissões aqui, a Lavínia até fez uma configuração bem boa aqui de cada eh exato.
+
+
+00:09:31
+
+Matheus Torquato: permissão.
+Estefany Gomes: Cada etapa.
+Matheus Torquato: Legal.
+Estefany Gomes: Por exemplo, o fundo só tem acesso a essa etapa aqui, nada mais ele vai ver.
+Matheus Torquato: Sim. É a primeira passar.
+Lavínia Resende: Mas eu acho que, perdão, vou te falar.
+Matheus Torquato: Pode falar. Pode falar.
+Lavínia Resende: É só para complementar,
+Matheus Torquato: Tem problema.
+Lavínia Resende: eu fui testar inclusive esses dias a redefinição de senha e assim é uma etapa que não tem 100% de segurança,
+Estefany Gomes: Ela
+Lavínia Resende: então não sei quão difícil é conectar o Gmail, inclusive porque não vai ser só a corporação da Maisodos que vai utilizar, o time da Valora também vai. Um exemplo é a redefinição de senha, como foi um projeto cru que a gente fez, eu e a Stephanie, ele não tem essa esse nível de segurança 100%, até porque quem acessa atualmente momento é só eu e a Stephanie. Então, a redefinição de senha dele mesmo é um link que clica e a hora que você clica nesse link, a página abre. Então, não tem de fato uma redefinição de senha. Então, não sei se é possível esse vínculo com o Google, que seria até algo de um grande ganho pra gente por questão de segurança, porque aqui a gente tá na intenção de fazer com que ele seja 100% a central do crédito PJ.
+
+
+00:10:26
+
+Lavínia Resende: Então, histórico de operações, parcelas, parcelas a vencer, tudo 100%, a calculadora, inclusive as operações de formalização. Então,
+Matheus Torquato: Sim.
+Lavínia Resende: não sei se é possívelar a segurança igual fal do projeto do
+Matheus Torquato: É, foi até bom você falar isso porque é o que eu ia falar.
+Lavínia Resende: Pedro.
+Matheus Torquato: Eh, como é que a gente vai fazer o processo desse painel, tá? Eu vou tirar ele do lavable, vai ser o primeiro passo. Eu vou extrair ele do lavable, tirar toda essa documenta, todos esses arquivos que vocês fizeram, ele vai ser o pontapé inicial para eu fazer o projeto para vocês. Então eu tiro ele, eu vou hospedar dentro do GitHub ali dos do da parte do banco de dados dá mais todos vão ficar dentro ali. Vai ser criado um domínio para esse para esse sistema. Ou seja, não vai ser esse preview mais todos loveb. Não vai ser mais isso. Vai ser vocês podem dar o nome que vocês quiserem. Só tem que ser ptodos.com.br, que é o o domínio principal de vocês. Então, a gente vai criar um subdomínio, por exemplo, eh, é crédito, vocês é de crédito, vocês estão falando, né?
+
+
+00:11:23
+
+Matheus Torquato: Crédito. Então, é um subdomínio de vocês. Então,
+Estefany Gomes: is
+Matheus Torquato: tá dentro do domínio das da mais todos. O banco de dados vai ser também dentro da mais todos. Eu eu tenho um arquivo que é o que é a organização de segurança que a mais todos aceita pela parte da TI. Vou revisar todos os cortes que estão feito aí. Vou fechar tudo que tem que ser fechado para não ficar exposto, porque a gente vai hospedar na internet esse painel e fazer daí o vínculo com o Google. Então, ou seja, isso aí que vocês fizeram, pula ele é muito bom para exatamente ter esses pontapés inicia. Mas eu vou ter que tirar disso aí, vou ter que fazer em código daí todas as coisas e o back end, algumas coisas vou vincular com com N8N, outras coisas eu vou fazer em código. Então é mais ou menos assim que a gente vai trabalhar. Não sei se você conseguiu entender mais ou menos. Pode pode perguntar.
+Lavínia Resende: Uma dúvida e quando você mandar pro GitHub,
+Matheus Torquato: Лави.
+Lavínia Resende: esse projeto do Lovb, ele não tá finalizado 100% com tudo que a gente quer integrar nele.
+
+
+00:12:19
+
+Lavínia Resende: Então a operação formalização tá sendo a nossa prioridade por conta de uma dor de visualização nossa e do fundo.
+Estefany Gomes: Aí ação dele não vai
+Lavínia Resende: Mas dentro de rotina operacional a gente tem outras outros processos a serem finalizados e dar continuidade lá dentro. Eh, quando você exportar ele para dentro do GitHub, o que eu fizer de alteração dentro do LB, do projeto que vai tá atual, eu consigo replicar lá dentro.
+Matheus Torquato: Não, não, ele vão ser coisas distintas. Por, por que isso? Não, não tem como, porque o o GitHub, o Lovp, eu preciso compartilhar as coisas do love, GitHub, só que o GitHub que tem que criar uma conta do GitHub, tem que vincular o GitHub a mais todos. A partir do momento que eu começar a mexer nesse painel e atualizar no GitHub, ele não atualiza, não atualiza no LB, entendeu? A atualiza do L pro GitHub, mas do GitHub pro Lb ele não atualiza, entendeu? O ao contrário ele não faz.
+Estefany Gomes: É, Mateus,
+Matheus Torquato: Então,
+Estefany Gomes: perdão, perdão. Pode
+Matheus Torquato: aí, então, o que que geralmente eu faço quando tô fazendo o painel com o Pedro ali,
+
+
+00:13:07
+
+Estefany Gomes: terminar.
+Matheus Torquato: com o pessoal, tá, ali com a RH e também algumas partes ali do do financeiro, eles fizeram esse esboço, eu tiro ele, organizo tudo. Aí o que a gente faz, pô, ficou legal, vou dar uns upgrades. O que que eles geralmente fazem? Eles, eu emito uma HTML, tiro o HTML do jeito que tá o o painel pronto agora, né? Mando para eles, aí o que eles fazem? Eles vão no cloud ali e tal, jogam ali e vão conversando com o cloud para editar esse HTML, o que que eles querem de função, tal. Aí eles me mandam terl atualizado, uma documentação de de atualização e eu venho e atualizo o sistema conforme as coisas que vocês querem, entendeu? Então eu que vou começar a atualizar o sistema e vocês só vão me dar diretriz do que eu tenho que fazer. Basicamente é
+Estefany Gomes: Perfeito.
+Matheus Torquato: isso.
+Estefany Gomes: Era isso que era isso que eu ia perguntar, Lavínia. A gente vai versionando igual um aplicativo mesmo,
+Matheus Torquato: Vocês vão estar só me direcionando.
+Estefany Gomes: né?
+
+
+00:14:01
+
+Matheus Torquato: Vocês vão ser tipo eh numa uma esteira, né? vocês vocês vão ser tipo um product owner, sabe? Vão me começar a me vão me dar solicitação do que vocês querem que sejam feito e eu vou lá e produzo essa essa alteração, entendeu? Mas é eh o por que é mais fácil fazer isso? Além de eu eu continuar a parte de segurança que a mais todos deseja, eu vou acabar fazendo muito mais rápido as produções, entendeu? Então a gente consegue fazer gol mais rápido,
+Estefany Gomes: Boa.
+Matheus Torquato: mas pode
+Estefany Gomes: E é uma dúvida também, Mateus, uma das coisas que a gente quer fazer também,
+Matheus Torquato: falar.
+Estefany Gomes: como eu falei, cada eh aqui no arrasta, né? Cada etapa tem uma um ponto aqui para mover. E aí uma delas é esse contrato emitido. A gente quer conectar, porque hoje o fundo usa uma ferramenta de de contrato, então a gente quer conectar nessa ferramenta para que a gente tenha visualmente aqui.
+Matheus Torquato: Esse contra, esse esse é um sistema do fundo,
+Estefany Gomes: É perfeito.
+Matheus Torquato: ele tem a TI, você sabe.
+
+
+00:14:55
+
+Matheus Torquato: Yeah.
+Estefany Gomes: Eles têm a P no que eles usam hoje,
+Matheus Torquato: alguma coisa assim ou não?
+Estefany Gomes: só que eles estão no processo de migração. Eles usam hoje o docine e aí estão no processo pro Flick sign.
+Matheus Torquato: É, isso são coisas que a gente pode até ser interessante você conversar com eles, ver se essa mudança vai gerar uma,
+Estefany Gomes: Eh,
+Matheus Torquato: eles vão ter a possibilidade de ter uma PI onde a gente consiga integrar em um sistema e consiga atualizar, senão a gente tem que ver outro formato. Por exemplo, eh, eu tenho um sistema que eu tô fazendo paraa LINE, que esse sistema hoje não tem API, mas vão liberar API pra gente. Mas o que ela faz? Todo dia ela emite um relatório, importa no sistema e atual inteiro todo dia. Ele faz esse formato. Mas o interessante é ser em tempo real não dá, porque as as APIs ela elas não quando é API assim de um outro sistema, não é interessante em fazer o tempo todo essa atualização, sabe? Eh, você fazer a cada uma hora,
+Estefany Gomes: Uhum.
+Matheus Torquato: cada duas horas. Então, aí que a P às vezes ela sobrecarrega, mas aí a gente segue assim,
+
+
+00:15:50
+
+Estefany Gomes: Tá perfeito.
+Matheus Torquato: entendeu?
+Estefany Gomes: Só pra gente deixar uma piada esse questionamento. Eu já até perguntei ele se eles eles retornaram lá.
+Lavínia Resende: Não retornaram ainda, Estefany sobre a API, mas até puxando esse ponto,
+Estefany Gomes: Так.
+Lavínia Resende: eh, me deu uma dúvida agora se a gente vai conectar o LV no Hubspot, como que a gente vai mover esse card de assinado do do Lovb para dentro do Hubspot?
+Matheus Torquato: assinado do lobo.
+Lavínia Resende: Porque que eu entendi vai ser o Hubpot que vai refletir no LB e não o
+Matheus Torquato: você falou é o o que que eu quero ver na documentação que até tô o processo aqui,
+Lavínia Resende: contrário.
+Matheus Torquato: vê se eu consigo espelhar do LB pro Hubspot, do Hubspot pro Lbow, fazer os dois caminhos, entendeu? Porque daí se você mexer em um,
+Lavínia Resende: Tá bom.
+Matheus Torquato: ele mexe no outro. Você mexer no outro, ele mexe no lado,
+Lavínia Resende: Beleza.
+Matheus Torquato: entendeu?
+Estefany Gomes: É isso.
+Matheus Torquato: Ó,
+Estefany Gomes: É,
+
+
+00:16:39
+
+Matheus Torquato: é,
+Estefany Gomes: você achou onde ficou ri que
+Matheus Torquato: é na engrenagem. Tu tem uma engrenagem em algum lugar ali em cima, tá vendo,
+Estefany Gomes: eu
+Matheus Torquato: ó? Tem um sininho aí. Tem engrenagem lá em cima. Tem ali, ó, o seu nome ali, ó, todos e empreendimentos. Re assistente. Um, aí tem um lotin com 99 mais.
+Estefany Gomes: ô meu Deus,
+Matheus Torquato: Aí tem o aqui,
+Estefany Gomes: não tô acompanhando não.
+Matheus Torquato: aqui em cima aqui. Isso,
+Lavínia Resende: um pouquinho.
+Matheus Torquato: isso, isso, isso.
+Estefany Gomes: Ai,
+Matheus Torquato: Tem um telefoninho,
+Estefany Gomes: meu Deus.
+Matheus Torquato: tem uma casinha ali, tá vendo que tem a lupinha, né?
+Estefany Gomes: Ah,
+Matheus Torquato: Aqui.
+Estefany Gomes: tá, tá, tá, tá, tá, tá,
+Matheus Torquato: Isso.
+Estefany Gomes: tá.
+Matheus Torquato: Boa.
+Estefany Gomes: Oxe,
+
+
+00:17:06
+
+Matheus Torquato: Isso aí em cima.
+Estefany Gomes: demor que lenta. Beleza.
+Matheus Torquato: Aí você aí você vai procurar por integrações aqui,
+Estefany Gomes: Tem automação aqui.
+Matheus Torquato: ó. integrações aqui embaixo que eu fiz. Boa. Deixa eu ver. Mostrar integrações. Deixa eu
+Estefany Gomes: integrações
+Matheus Torquato: ver. Ah, tá. Aqui são todas as integrações que você tem. Aplicativo conectado, chave de atendimento, aplicativo privado, aplicativo artigo, contato com market.
+Lavínia Resende: Será que fica disponível só pros perfis de admin? Tipo J A Naira.
+Estefany Gomes: mas de mim. Eu sou de mim.
+Lavínia Resende: M.
+Matheus Torquato: Você é de mim? Deixa eu só dar uma olhada aqui.
+Estefany Gomes: Всё.
+Matheus Torquato: Vou tirar um print aqui para rapidinho.
+Estefany Gomes: Угу.
+Matheus Torquato: M.
+Estefany Gomes: C. Quando eu precisei coisar conectar o simulador, eu pedi acesso de adminar.
+Matheus Torquato: é aplicativos privados.
+
+
+00:18:19
+
+Estefany Gomes: Tá. Ixi, vou clicar em acessar,
+Matheus Torquato: Pode,
+Estefany Gomes: tá?
+Matheus Torquato: pode clicar. Então, pra gente, ele não vai, ele não vai criar, ele só vai mostrar pra gente. Ó, tem todos esses aplicativos. São os antigos,
+Estefany Gomes: Угуm.
+Matheus Torquato: né? Tá, então, pera aí, deixa eu ver o que ele tem que fazer. Beleza, já entendi o que tem que fazer. Ó, vamos fazer o seguinte, eh, eu já eu já a o Cloud já me deu o que que tem que fazer.
+Estefany Gomes: Угуm.
+Matheus Torquato: A uma coisa que você faça é na documentação ali embaixo, tá vendo isso? Ele vai virar um arquivo. Vê se você consegue extrair, baixar esse arquivo ou me mandar esse link. Vê se consegue me mandar esse link se eu consigo entrar nesse link. Pode ser no le mesmo.
+Estefany Gomes: É que fica no sala.
+Matheus Torquato: Deixa ver se vai se ele vai pedir acesso ou não. Acho que
+
+
+00:19:22
+
+Estefany Gomes: É aqui.
+Matheus Torquato: não.
+Estefany Gomes: Eu acho que não, porque tá login aqui, ó. Singup. Pronto, envie. É, acho que é, acho que é aberto isso aqui.
+Matheus Torquato: Clica em sing up ali pra gente ver que ele vai gerar uma uma documentação diferente. Pode confirmar. Ou vai direcionar pro mesmo lugar que essa conta é isso. Ah, ele ele foi para aí, ó. Legal. Ah, é aquela mesma página que a gente tava, não era?
+Estefany Gomes: Eu acho que é um pouco diferente.
+Matheus Torquato: Ou não? Aplicativos antigos, não é que era aplicativos antigos que você tava,
+Estefany Gomes: Parece É.
+Matheus Torquato: tá vendo, ó? Clica ali. Apativos antigos. Deixa eu ver.
+Estefany Gomes: Ah, isso mesmo.
+Matheus Torquato: É a mesma página que você tava. Beleza. Então, a documentação é essa daqui. Ele é que eu vou ter que entrar nesses links para ver tal,
+
+
+00:20:11
+
+Estefany Gomes: Ah,
+Matheus Torquato: ler as documentações, tudo mais. Eu já falo aí, eu falo para você no slack, ver se eu consigo fazer esse bate-volta. Aí eu te informo,
+Estefany Gomes: Vai
+Matheus Torquato: aí a gente aí depois eu te falo pra gente seguir o processinho lá que eu que eu te falei da gente tirar daí,
+Estefany Gomes: gerar.
+Matheus Torquato: colocar num num no GitHub ali da Mais todos. Eu vou ter que pedir um domínio também. Pode ser o domínio que eu falei crédito.br, tá?
+Estefany Gomes: Pode.
+Matheus Torquato: Aí eu vou ter que pedir o domínio, a gente vai fazendo e vai construindo. O mais demorado mesmo é sair esse domínio, tá? O resto a gente faz rapidinho aqui. Tem que também a documentação.
+Estefany Gomes: Beleza.
+Matheus Torquato: Eu vou pedir para você só abrir um chamadinho ali no, é no gira,
+Estefany Gomes: Fechou.
+Matheus Torquato: né, que vocês usam.
+Estefany Gomes: Você me manda o link do seu giro só para acertar.
+Matheus Torquato: Vou mandar o link ali,
+
+
+00:20:59
+
+Estefany Gomes: Tem um monte.
+Matheus Torquato: daí a gente já vai construindo isso daí rapidinho.
+Estefany Gomes: Fechou.
+Matheus Torquato: Você tem um um prazo assim?
+Estefany Gomes: Aí a gente combinou com
+Matheus Torquato: Como é como é que tá a situação? Vou entender.
+Estefany Gomes: ele que ia começar a usar dia primeiro,
+Matheus Torquato: É fevereiro
+Estefany Gomes: mas até para é mas acho que a gente consegue ganhar
+Matheus Torquato: terra.
+Estefany Gomes: um um fôlegozinho. Ela vinha desenrola pra gente. Quanto que você acha mais ou menos tua expectativa aí? que realmente ficou 100%
+Matheus Torquato: É, eh,
+Estefany Gomes: não
+Matheus Torquato: é que assim,
+Estefany Gomes: 100%.
+Matheus Torquato: eu consigo fazer até dia primeiro essa parte de configuração. O problema mesmo é esse domínio sair. me demora para sair, mas não é porque não uma demora minha, é mais por parte de vocês ali, do pessoal que faz,
+Estefany Gomes: Ah, que que faz que aí a gente pode correr atrás?
+Matheus Torquato: mas a gente, cara,
+Estefany Gomes: 10% não
+Matheus Torquato: pior que o meu WhatsApp acabou de cair, meu.
+
+
+00:21:58
+
+Matheus Torquato: Tava no meu WhatsApp o nome do cara.
+Estefany Gomes: tem problema.
+Matheus Torquato: Eh,
+Estefany Gomes: A gente vai falando no slack
+Matheus Torquato: eu vou, é, eu vou eu vou lembrar o nome dele aí eu vou pedir pro Pedro.
+Estefany Gomes: ali.
+Matheus Torquato: Aí a gente, qualquer coisa também a gente pode hospedar em um domínio qualquer, ali dá mais todos e daí vocês usam a tinho, domínio é só um nome também. A gente pode só para vocês apresentarem, né? Depois a gente só troca. Mas acho até dia primeiro acho que eu consigo entregar para vocês.
+Estefany Gomes: Fechou.
+Matheus Torquato: Sim.
+Estefany Gomes: Fechou.
+Matheus Torquato: Qualqu coisa eu faço final de semana também.
+Estefany Gomes: Não, não, fica em paz. É só a gente vai alinhando ali.
+Matheus Torquato: Você não sabe, mas eu trabalho todo dia. Sábado, domingo.
+Estefany Gomes: Nossa,
+Matheus Torquato: Tô trabalhando normal.
+Estefany Gomes: por você perguntou se vai fazer a reunião amanhã.
+Matheus Torquato: É, eu achei estranho porque ninguém trabalha, ninguém de vocês trabalha no sábado. Aí falei sábado.
+
+
+00:22:37
+
+Matheus Torquato: Tipo, acho que só o comercial trabalha sábado, né? o pessoal que fica salve. Mas beleza.
+Estefany Gomes: Mas beleza,
+Matheus Torquato: Eh, eu vou eu vou te mandar vou te mandar ali o link aí.
+Estefany Gomes: a gente vai
+Matheus Torquato: Me manda essa transcrição, por favor. Acho que veio automático para mim, né?
+Estefany Gomes: mandalquer
+Matheus Torquato: Também vem automático para mim no se vier, eu te
+Estefany Gomes: coisa você pode me chamando ali no leque,
+Matheus Torquato: peço.
+Estefany Gomes: tá? A gente vai trocando figurinha. Se precisar de qualquer coisa pode falar com a gente.
+Matheus Torquato: Fechou.
+Estefany Gomes: Muito obrigada, viu, Mateus,
+Matheus Torquato: Fechou.
+Estefany Gomes: pelo seu tempo aí.
+Matheus Torquato: Valeu, valeu, gente. Imagina que é isso.
+Lavínia Resende: Muito obrigada, Mateus.
+Estefany Gomes: Valeu aí.
+Matheus Torquato: Valeu, valeu.
+Lavínia Resende: Até breve.
+Matheus Torquato: Tchau. Tchau. Final de semana.
+Lavínia Resende: Te amo.
+
+
+A transcrição foi encerrada após 00:23:13
+
+Esta transcrição editável foi gerada por computador e pode conter erros. As pessoas também podem alterar o texto depois que ele for criado.
