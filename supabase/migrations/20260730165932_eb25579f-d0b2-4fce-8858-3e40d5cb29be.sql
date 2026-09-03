@@ -1,0 +1,1 @@
+DELETE FROM public.operacoes_parcelas_manuais WHERE id_valora = 'TESTE-RPC';

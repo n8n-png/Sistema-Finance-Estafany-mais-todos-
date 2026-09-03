@@ -1,0 +1,179 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* MaisTODOS Credit Simulator Design System */
+
+@layer base {
+  :root {
+    /* MaisTODOS — Hierarquia 70/20/10 (Branco / Roxo / Verde) */
+    --background: 0 0% 100%;              /* Fundo principal branco (70%) */
+    --foreground: 0 0% 12%;
+
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 12%;
+
+    /* Roxo institucional #7200D6 - 20% */
+    --primary: 274 100% 42%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Verde "sorriso" #70E000 - 10% (destaques pontuais) */
+    --secondary: 89 100% 44%;
+    --secondary-foreground: 0 0% 10%;
+
+    /* Apoio (uso seletivo) */
+    --brand-magenta: 327 93% 47%;         /* #E5087E */
+    --brand-gray: 0 0% 49%;               /* #7E7E7E */
+
+    /* SLA / aging (semáforo) */
+    --sla-ok: 89 100% 44%;                /* verde institucional */
+    --sla-warn: 45 100% 51%;              /* amarelo */
+    --sla-late: 327 93% 47%;              /* magenta/vermelho de alerta */
+
+    --muted: 274 30% 97%;
+    --muted-foreground: 0 0% 42%;
+
+    --accent: 274 100% 97%;               /* wash de roxo */
+    --accent-foreground: 274 100% 42%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 274 18% 90%;
+    --input: 274 18% 90%;
+    --ring: 274 100% 42%;
+
+    --radius: 0.75rem;
+
+    /* Brand surfaces (sem gradiente — cor sólida) */
+    --gradient-main: linear-gradient(hsl(274 100% 42%), hsl(274 100% 42%));
+    --gradient-subtle: linear-gradient(hsl(274 100% 42% / 0.05), hsl(274 100% 42% / 0.05));
+
+    /* Sombras institucionais */
+    --shadow-card: 0 1px 3px hsl(274 100% 16% / 0.08);
+    --shadow-card-hover: 0 8px 18px -14px hsl(274 100% 42% / 0.42);
+
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Sidebar roxa sólida (20%) */
+    --sidebar-background: 274 100% 42%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 274 100% 42%;
+    --sidebar-accent: 0 0% 100%;
+    --sidebar-accent-foreground: 274 100% 42%;
+    --sidebar-border: 274 100% 32%;
+    --sidebar-ring: 0 0% 100%;
+
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 280 100% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 112 78% 50%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 280 100% 53%;
+    --radius: 0.75rem;
+    
+    --gradient-main: linear-gradient(hsl(272 100% 42%), hsl(272 100% 42%));
+    --gradient-subtle: linear-gradient(hsl(272 100% 42% / 0.1), hsl(272 100% 42% / 0.1));
+    
+    --shadow-card: 0 4px 6px -1px hsl(280 100% 53% / 0.2), 0 2px 4px -1px hsl(280 100% 53% / 0.1);
+    --shadow-card-hover: 0 10px 15px -3px hsl(280 100% 53% / 0.3), 0 4px 6px -2px hsl(280 100% 53% / 0.2);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body font-normal antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    letter-spacing: 0;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-bold;
+    letter-spacing: 0;
+  }
+
+  h1 { @apply text-2xl md:text-3xl; }
+  h2 { @apply text-xl md:text-2xl; }
+  h3 { @apply text-lg; }
+
+  button, input, select, textarea, label {
+    @apply font-body;
+  }
+
+}
+
+@layer utilities {
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Padrão denso (referência CRM): rótulo de seção/campo */
+  .label-dense {
+    @apply text-xs uppercase tracking-wide leading-normal text-muted-foreground font-body font-semibold;
+  }
+  .section-title {
+    @apply text-xs uppercase tracking-wide leading-normal font-body font-semibold text-muted-foreground;
+  }
+  .metric-value {
+    @apply font-body font-bold text-3xl leading-tight text-foreground;
+  }
+  .crm-panel {
+    @apply rounded-lg border border-border bg-card shadow-card;
+  }
+  .crm-filterbar {
+    @apply rounded-lg border border-border bg-card shadow-card p-4;
+  }
+  .crm-metric-card {
+    @apply relative overflow-hidden rounded-lg border border-border bg-card p-4 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover;
+  }
+  .crm-section-card {
+    @apply rounded-lg border border-border bg-card p-5 shadow-card;
+  }
+  .crm-field-label {
+    @apply text-xs uppercase tracking-wide leading-normal text-muted-foreground font-semibold;
+  }
+  .crm-compact-value {
+    @apply font-body text-2xl font-bold leading-tight text-primary;
+  }
+  /* Pills/badges compactos: evita corte de texto e quebra indevida */
+  .crm-pill {
+    @apply inline-flex max-w-full shrink-0 items-center gap-1 truncate whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-semibold leading-5;
+  }
+}
