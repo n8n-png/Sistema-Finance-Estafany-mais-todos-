@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "export:evolucao": "node scripts/gerar-pacote-evolucao.mjs",
-    "hubspot:descobrir": "node scripts/hubspot-descobrir.mjs"
+    "hubspot:descobrir": "node scripts/hubspot-descobrir.mjs",
+    "hubspot:amostrar": "node scripts/hubspot-amostrar.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",

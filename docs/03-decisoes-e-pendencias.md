@@ -14,7 +14,7 @@
 | 3 | Documentos da operação | **No painel** (armazenamento próprio) **e também no SharePoint** | Ver §4 |
 | 4 | Congelamento do Lovable | **01/09/2026 às 16:42** | Ver §5 |
 | 5 | Autenticação do fundo (Valora) | Eles usam **Outlook**, não Google Workspace | Ver §6 — muda a arquitetura de acesso |
-| 6 | Token do HubSpot | Aplicativo privado criado pela Estefany; token entregue | Destrava a Story 4.1 |
+| 6 | Token do HubSpot | Recebido e em uso. Pipeline identificado: **MaisTODOS - Comercial Crédito PJ** (`134862882`) | Ver `docs/04-mapeamento-hubspot.md` |
 | 7 | Fonte da verdade | HubSpot manda nas etapas 1–2; Painel manda nas 4–6 | Confirmado em 03/09 |
 
 ---
@@ -147,6 +147,6 @@ estar decidido antes de publicar.
 | 4 | Site e biblioteca do SharePoint | Estefany / Lavínia | Espelhamento de documentos |
 | 5 | Quem registra o aplicativo no Azure AD da MaisTODOS | TI / Victor | SharePoint |
 | 6 | Registros DNS (SPF, DKIM, DMARC) do subdomínio de envio | TI / Victor | E-mail real |
-| 7 | Pipeline correto e pareamento das etapas do HubSpot | Estefany | Sync do HubSpot |
+| 7 | Confirmar o mapeamento de campos do HubSpot — ver `docs/04-mapeamento-hubspot.md` §6 | Estefany / Lavínia | Sync do HubSpot |
 | 8 | Como o `envelopeId` da Flixsign chega ao painel | Estefany / fundo | Integração de assinatura |
 | 9 | VPS separada, bucket S3 e DNS do subdomínio | Victor | Publicação |
