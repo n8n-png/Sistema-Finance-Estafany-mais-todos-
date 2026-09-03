@@ -55,8 +55,10 @@ const corpo = (evento: EventoNotificacao, op: Operacao, etapaTitulo: string, det
 
 /**
  * Envia a notificação do evento por e-mail.
- * Usa a edge function `send-operacao-email` (Resend). Enquanto a chave de API
- * da integração não estiver conectada, a função responde em modo simulado.
+ * Usa a edge function `send-operacao-email`, que fala direto com o Resend e
+ * exige usuário autenticado (Story 2.5). Enquanto `RESEND_API_KEY` e
+ * `EMAIL_REMETENTE` não estiverem configurados no ambiente, a function responde
+ * em modo simulado — o fluxo roda inteiro, só não sai e-mail.
  */
 export async function notificar(
   evento: EventoNotificacao,
@@ -90,7 +92,9 @@ export async function notificar(
       title: simulado
         ? `E-mail simulado para: ${destinatarios.join(", ")}`
         : `E-mail enviado para: ${destinatarios.join(", ")}`,
-      description: simulado ? `Assunto: ${subject} — conecte o Resend para envio real.` : `Assunto: ${subject}`,
+      description: simulado
+        ? `Assunto: ${subject} — configure RESEND_API_KEY e EMAIL_REMETENTE para envio real.`
+        : `Assunto: ${subject}`,
     });
   } catch (err: any) {
     console.error("[notificar] falha", err);

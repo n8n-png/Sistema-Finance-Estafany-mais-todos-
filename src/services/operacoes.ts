@@ -1,32 +1,43 @@
 /**
- * Camada de serviço das Operações Ativas.
- * Nesta fase TODOS os dados são mockados em memória (array estático).
- * Cada função abaixo é o ponto único de troca para a integração real.
+ * Camada de serviço do funil de formalização.
+ *
+ * Story 3.3 — o array em memória foi substituído por persistência real no
+ * banco (`operacoesRepo.ts`). A interface pública deste módulo permaneceu
+ * idêntica de propósito: nenhuma tela precisou mudar.
+ *
+ * As funções de transformação (`moverEtapa`, `registrarMovimentacao`) continuam
+ * puras e síncronas — a UI as usa para atualizar o estado local, e a gravação
+ * acontece em `salvarOperacao`.
  */
 
 import { AS_DOCS, CDT_DOCS } from "@/utils/checklistSchema";
-import type { Pessoa } from "@/utils/docFormats";
+import { carregarSlaDb, listarOperacoesDb, salvarOperacaoDb } from "./operacoesRepo";
+import type {
+  ChecklistItem,
+  Etapa,
+  EtapaConfig,
+  LinhaCredito,
+  Movimentacao,
+  Operacao,
+  Signatario,
+} from "./operacoes.types";
 
-/** Fundo responsável pela operação. // TODO: integração real com HubSpot aqui. */
-export type Fundo = "FIDC MaisTODOS";
+export type {
+  ChecklistItem,
+  Etapa,
+  EtapaConfig,
+  Fundo,
+  LinhaCredito,
+  Movimentacao,
+  Operacao,
+  Signatario,
+} from "./operacoes.types";
 
-export type LinhaCredito = "QIA" | "Amor Saúde" | "Visão de Todos";
-
-export type Etapa =
-  | "recolhimento"
-  | "analise"
-  | "aguardando_contrato"
-  | "contrato_emitido"
-  | "contrato_assinado"
-  | "desembolsado";
-
-export interface EtapaConfig {
-  id: Etapa;
-  titulo: string;
-  slaDias: number; // limite mockado por etapa (ajustável depois)
-  oculta?: boolean;
-}
-
+/**
+ * Etapas do funil. Títulos e ordem são fixos (são a definição do processo);
+ * o SLA é configurável em `operacoes_formalizacao_sla` e sincronizado por
+ * `carregarSla()`. Os valores abaixo são o padrão até a primeira carga.
+ */
 export const ETAPAS: EtapaConfig[] = [
   { id: "recolhimento", titulo: "Recolhimento de documentos", slaDias: 3 },
   { id: "analise", titulo: "Análise fornecedor", slaDias: 3 },
@@ -36,64 +47,26 @@ export const ETAPAS: EtapaConfig[] = [
   { id: "desembolsado", titulo: "Desembolsado", slaDias: 3 },
 ];
 
-export interface ChecklistItem {
-  id: string;
-  label: string;
-  checked: boolean;
-  pendente?: boolean;
-  anexoNome?: string | null;
-}
-
-export interface Movimentacao {
-  id: string;
-  descricao: string;
-  autor: string;
-  data: string; // ISO
-}
-
-export interface Signatario {
-  id: string;
-  nome: string;
-  papel: string;
-  status: "Pendente" | "Assinado";
-}
-
-export interface Operacao {
-  id: string;
-  unidade: string;
-  /** CNPJ da unidade. // TODO: integração real com HubSpot aqui. */
-  cnpj?: string;
-  /** Número da conta do estabelecimento para depósito (dado bancário do documento). */
-  contaDeposito?: string;
-  /** Carência total (meses) — sem pagamento de principal nem juros. */
-  carenciaTotalMeses?: number;
-  /** Carência de principal (meses) — paga apenas juros. */
-  carenciaPrincipalMeses?: number;
-  linha: LinhaCredito;
-  fundo: Fundo; // TODO: integração real com HubSpot aqui — hoje mockado.
-  valor: number;
-  taxa: string;
-  prazoMeses: number;
-  etapa: Etapa;
-  dataEntradaFunil: string; // ISO
-  dataEntradaEtapa: string; // ISO — base do SLA/aging
-  checklist: ChecklistItem[];
-  signatarios: Signatario[];
-  /** Dados completos do(s) representante(s) legal(is) — usados no checklist PDF/Word. */
-  dadosRepresentantes?: Pessoa[];
-  /** Dados completos do(s) avalista(s) — usados no checklist PDF/Word. */
-  dadosAvalistas?: Pessoa[];
-  historico: Movimentacao[];
-  alerta?: { tipo: "Pendência" | "Reprovado"; mensagem: string } | null;
-  /** E-mails que recebem as notificações desta operação (Admin > Usuários cadastrados). */
-  destinatarios: string[];
-  comprovanteDesembolso?: string | null;
-}
+/** Atualiza os SLAs em memória a partir da configuração do banco. */
+export const carregarSla = async (): Promise<void> => {
+  try {
+    const linhas = await carregarSlaDb();
+    for (const linha of linhas) {
+      const etapa = ETAPAS.find((e) => e.id === linha.etapa);
+      if (etapa) {
+        etapa.slaDias = linha.sla_dias;
+        etapa.titulo = linha.titulo;
+      }
+    }
+  } catch (err) {
+    // SLA é configuração, não dado crítico: falha aqui não pode derrubar o funil.
+    console.warn("[operacoes] não foi possível carregar o SLA configurado", err);
+  }
+};
 
 /**
  * Checklist por linha de crédito — reaproveita as MESMAS listas da
- * Central de Documentos Operacionais (`src/utils/checklistSchema.ts`),
- * em vez de manter uma lista fixa separada.
+ * Central de Documentos Operacionais (`src/utils/checklistSchema.ts`).
  */
 export const CHECKLIST_REGRAS: Record<LinhaCredito, string[]> = {
   QIA: CDT_DOCS,
@@ -101,216 +74,85 @@ export const CHECKLIST_REGRAS: Record<LinhaCredito, string[]> = {
   "Visão de Todos": AS_DOCS,
 };
 
+/**
+ * Monta o checklist inicial de uma operação nova.
+ * Os ids recebem o prefixo `novo-` para o repositório distinguir o que ainda
+ * não existe no banco.
+ */
 export const montarChecklist = (linha: LinhaCredito): ChecklistItem[] =>
   CHECKLIST_REGRAS[linha].map((label, i) => ({
-    id: `${linha}-${i}`,
+    id: `novo-${linha}-${i}`,
     label,
     checked: false,
     pendente: false,
     anexoNome: null,
   }));
 
-const diasAtras = (d: number) => {
-  const dt = new Date();
-  dt.setDate(dt.getDate() - d);
-  return dt.toISOString();
-};
-
 let movSeq = 0;
-export const mov = (descricao: string, autor = "Equipe MaisTODOS", data = new Date().toISOString()): Movimentacao => ({
+
+export const mov = (
+  descricao: string,
+  autor = "Equipe MaisTODOS",
+  data = new Date().toISOString(),
+): Movimentacao => ({
   id: `mov-${++movSeq}`,
   descricao,
   autor,
   data,
 });
 
-/** Registra uma movimentação no histórico. // TODO: integração real aqui — persistir no backend. */
+/**
+ * Adiciona uma movimentação ao histórico local. A gravação acontece em
+ * `salvarOperacao`; a mudança de etapa em si é auditada por trigger no banco.
+ */
 export const registrarMovimentacao = (
   op: Operacao,
   descricao: string,
-  autor = "Equipe MaisTODOS"
+  autor = "Equipe MaisTODOS",
 ): Operacao => ({ ...op, historico: [...op.historico, mov(descricao, autor)] });
 
-const sig = (nome: string, papel: string, status: Signatario["status"] = "Pendente"): Signatario => ({
-  id: `${nome}-${papel}`,
-  nome,
-  papel,
-  status,
-});
-
-// TODO: integração real aqui — substituir o array mockado por GET no backend/HubSpot.
-const MOCK: Operacao[] = [
-  {
-    id: "op-1",
-    unidade: "CDT Aracaju",
-    cnpj: "60.361.242/0001-32",
-    linha: "QIA",
-    fundo: "FIDC MaisTODOS",
-    valor: 1000,
-    taxa: "1,2% a.m. + CDI",
-    prazoMeses: 24,
-    etapa: "recolhimento",
-    destinatarios: [],
-    dataEntradaFunil: diasAtras(1),
-    dataEntradaEtapa: diasAtras(1),
-    checklist: montarChecklist("QIA"),
-    signatarios: [sig("João Almeida", "Sócio avalista"), sig("Maria Souza", "Representante legal")],
-    historico: [
-      mov("Operação criada", "Integração HubSpot", diasAtras(9)),
-      mov("Documentação solicitada à unidade", "Equipe MaisTODOS", diasAtras(5)),
-    ],
-    alerta: null,
-  },
-  {
-    id: "op-2",
-    unidade: "CDT Serra",
-    cnpj: "23.456.789/0001-81",
-    linha: "QIA",
-    fundo: "FIDC MaisTODOS",
-    valor: 5000,
-    taxa: "1,2% a.m. + CDI",
-    prazoMeses: 24,
-    etapa: "analise",
-    destinatarios: [],
-    dataEntradaFunil: diasAtras(6),
-    dataEntradaEtapa: diasAtras(3),
-    checklist: montarChecklist("QIA").map((i) => ({ ...i, checked: true })),
-    signatarios: [sig("Carlos Dias", "Sócio avalista"), sig("Ana Prado", "Representante legal")],
-    historico: [
-      mov("Operação criada", "Integração HubSpot", diasAtras(9)),
-      mov("Documentação solicitada à unidade", "Equipe MaisTODOS", diasAtras(5)),
-    ],
-    alerta: null,
-  },
-  {
-    id: "op-3",
-    unidade: "CDT RP",
-    cnpj: "34.567.890/0001-72",
-    linha: "QIA",
-    fundo: "FIDC MaisTODOS",
-    valor: 90000,
-    taxa: "1,2% a.m. + CDI",
-    prazoMeses: 36,
-    etapa: "recolhimento",
-    destinatarios: [],
-    dataEntradaFunil: diasAtras(12),
-    dataEntradaEtapa: diasAtras(5),
-    checklist: montarChecklist("QIA"),
-    signatarios: [sig("Rita Lopes", "Sócia avalista")],
-    historico: [
-      mov("Operação criada", "Integração HubSpot", diasAtras(9)),
-      mov("Documentação solicitada à unidade", "Equipe MaisTODOS", diasAtras(5)),
-    ],
-    alerta: { tipo: "Reprovado", mensagem: "Restrição de crédito identificada na análise do fornecedor." },
-  },
-  {
-    id: "op-4",
-    unidade: "Amor Saúde Niterói",
-    cnpj: "45.678.901/0001-63",
-    linha: "Amor Saúde",
-    fundo: "FIDC MaisTODOS",
-    valor: 12000,
-    taxa: "2,19% a.m.",
-    prazoMeses: 48,
-    etapa: "contrato_emitido",
-    destinatarios: [],
-    dataEntradaFunil: diasAtras(9),
-    dataEntradaEtapa: diasAtras(2),
-    checklist: montarChecklist("Amor Saúde").map((i) => ({ ...i, checked: true })),
-    signatarios: [
-      sig("Pedro Antunes", "Representante legal"),
-      sig("Luciana Reis", "Avalista"),
-      sig("Valora Fundo", "Credor", "Assinado"),
-    ],
-    historico: [
-      mov("Operação criada", "Integração HubSpot", diasAtras(9)),
-      mov("Documentação solicitada à unidade", "Equipe MaisTODOS", diasAtras(5)),
-    ],
-    alerta: null,
-  },
-  {
-    id: "op-5",
-    unidade: "Visão de Todos Osasco",
-    cnpj: "56.789.012/0001-54",
-    linha: "Visão de Todos",
-    fundo: "FIDC MaisTODOS",
-    valor: 30000,
-    taxa: "0,99% a.m. + CDI",
-    prazoMeses: 24,
-    etapa: "desembolsado",
-    destinatarios: [],
-    dataEntradaFunil: diasAtras(20),
-    dataEntradaEtapa: diasAtras(1),
-    checklist: montarChecklist("Visão de Todos").map((i) => ({ ...i, checked: true })),
-    signatarios: [
-      sig("Fábio Moraes", "Representante legal", "Assinado"),
-      sig("Valora Fundo", "Credor", "Assinado"),
-    ],
-    historico: [
-      mov("Operação criada", "Integração HubSpot", diasAtras(9)),
-      mov("Documentação solicitada à unidade", "Equipe MaisTODOS", diasAtras(5)),
-    ],
-    alerta: null,
-    comprovanteDesembolso: null,
-  },
-];
-
-/** Lista operações. // TODO: integração real aqui — buscar do backend/HubSpot. */
-export const listarOperacoes = async (): Promise<Operacao[]> =>
-  MOCK.map((o) => ({
-    ...o,
-    checklist: o.checklist.map((c) => ({ ...c })),
-    signatarios: o.signatarios.map((s) => ({ ...s })),
-    historico: o.historico.map((h) => ({ ...h })),
-  }));
+/** Lista as operações do funil visíveis para o usuário logado (filtro por RLS). */
+export const listarOperacoes = async (): Promise<Operacao[]> => {
+  await carregarSla();
+  return listarOperacoesDb();
+};
 
 /** Signatários ainda pendentes de assinatura. */
 export const pendentesAssinatura = (op: Operacao): Signatario[] =>
   op.signatarios.filter((s) => s.status !== "Assinado");
 
+/** Persiste a operação alterada. */
+export const salvarOperacao = async (op: Operacao): Promise<Operacao> => salvarOperacaoDb(op);
+
 /**
- * // TODO: integração real aqui — gerar .zip no backend com todos os anexos da operação
- * // (Drive/SharePoint/bucket) e devolver a URL de download.
+ * // Story 3.4 — gerar .zip com todos os anexos da operação e devolver a URL.
+ * // Depende da decisão de onde os documentos ficam (Drive/SharePoint/bucket).
  */
 export const baixarDocumentacaoZip = async (op: Operacao): Promise<string> =>
   `documentacao-${op.id}.zip`;
 
-/** // TODO: integração real aqui — download individual do anexo do storage. */
+/** // Story 3.4 — download individual do anexo a partir do Storage. */
 export const baixarAnexo = async (op: Operacao, itemId: string): Promise<string> =>
   `${op.id}-${itemId}.pdf`;
 
 /**
- * Persiste a operação alterada.
- * // TODO: integração real aqui — PATCH no backend + sincronizar com HubSpot via API/private app token.
- * // Toda mudança de status deve refletir no deal correspondente do HubSpot, e mudanças feitas
- * // no HubSpot devem refletir aqui. Cuidado com loop de sincronização (evitar disparo duplo).
- */
-export const salvarOperacao = async (op: Operacao): Promise<Operacao> => {
-  // mock: apenas devolve o objeto
-  return op;
-};
-
-/**
- * // TODO: integração real aqui — ao entrar em "Recolhimento de documentos",
- * // criar automaticamente uma pasta estruturada no Google Drive ou SharePoint
- * // (não usar file server local — sem API disponível).
+ * // Story 3.4 — ao entrar em "Recolhimento de documentos", criar a pasta
+ * // estruturada da operação. Bloqueado pela decisão de destino dos documentos.
  */
 export const criarPastaDocumentos = async (op: Operacao): Promise<void> => {
-  console.info("[mock] criar pasta de documentos para", op.unidade);
+  console.info("[pendente] criar pasta de documentos para", op.unidade);
 };
 
 /**
- * // TODO: integração real aqui — FlixSign (webhook ou polling via API)
- * // atualizará o status de cada signatário automaticamente.
- * // Depende de o fundo (dono da conta FlixSign) liberar uma API key e/ou
- * // configurar webhook de status de assinatura para a Maistodos.
+ * // Story 4.3 — polling da Flixsign (`GetEnvelope`) atualiza o status de cada
+ * // signatário. O manual v1.0.2 não documenta webhook, então é polling mesmo.
+ * // Depende da credencial de serviço, que é da conta do fundo.
  */
 export const sincronizarAssinaturas = async (op: Operacao): Promise<Signatario[]> => op.signatarios;
 
-/**
- * // TODO: integração real aqui — upload do comprovante para storage (Drive/SharePoint/bucket).
- */
-export const anexarComprovante = async (op: Operacao, nomeArquivo: string): Promise<string> => nomeArquivo;
+/** // Story 3.4 — upload do comprovante de desembolso para o Storage. */
+export const anexarComprovante = async (op: Operacao, nomeArquivo: string): Promise<string> =>
+  nomeArquivo;
 
 /** Aging em dias na etapa atual. */
 export const diasNaEtapa = (op: Operacao): number => {
@@ -330,6 +172,11 @@ export const slaStatus = (op: Operacao): SlaStatus => {
 
 export const tituloEtapa = (etapa: Etapa) => ETAPAS.find((e) => e.id === etapa)?.titulo ?? etapa;
 
+/**
+ * Move a operação de etapa no estado local. `dataEntradaEtapa` é recalculada
+ * também no banco, por trigger, na hora de salvar — o valor aqui serve para a
+ * UI refletir o SLA imediatamente.
+ */
 export const moverEtapa = (op: Operacao, etapa: Etapa): Operacao => ({
   ...op,
   etapa,

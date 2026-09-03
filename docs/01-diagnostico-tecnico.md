@@ -94,7 +94,7 @@ A etapa "Contrato desembolsado" pedida no escopo v2 **já está no código**. Po
 
 | # | Achado | Gravidade | Detalhe |
 |---|---|---|---|
-| S1 | **RLS permissiva demais** | **Alta** | 12 políticas usam `TO authenticated USING (true)`: `clientes_limites`, `operacoes_ativas`, `operacoes_snapshots`, `operacoes_projecoes`, `operacoes_divergencias`, `operacoes_overrides`, `operacoes_parcelas_manuais`, `clientes_pre_aprovados`. Ou seja, **qualquer usuário logado lê tudo** — inclusive o time externo da Valora. O controle por `user_page_access` existe apenas no front-end (`usePageAccess`), portanto é cosmético: basta chamar a API do Supabase direto com o token para ler a base inteira. |
+| S1 | **RLS não distingue perfil** | **Alta** | *(revisado em 03/09 — ver nota abaixo)* Duas falhas distintas: **(a)** `clientes_pre_aprovados` ainda usa `TO authenticated USING (true)` — **qualquer usuário logado lê a carteira inteira de clientes pré-aprovados**; **(b)** sete tabelas (`operacoes_ativas`, `operacoes_snapshots`, `operacoes_projecoes`, `operacoes_divergencias`, `operacoes_checklists`, `operacoes_overrides`, `operacoes_parcelas_manuais`) usam `is_staff(auth.uid())`, que só verifica se o usuário **tem algum papel** em `user_roles` — não distingue perfil nem consulta `user_page_access`. Como o time da Valora vai precisar de um papel para entrar, eles herdariam acesso de leitura a toda a base operacional. O controle por `user_page_access` continua existindo **apenas no front-end** (`usePageAccess`): basta chamar a API do Supabase com o token para passar por cima. |
 | S2 | **Redefinição de senha sem validação real** | **Alta** | Já relatado pela Lavínia na reunião. Confirmado: fluxo herdado do protótipo, sem hardening. |
 | S3 | **Sem login Google / SSO** | Alta | Hoje é e-mail + senha, sem MFA. Escopo exige Google (MaisTODOS) + política definida para externos. |
 | S4 | **Chave e URL do Supabase versionadas** | Média | `.env` veio dentro do zip. É a chave `anon` (pública por design), mas o projeto `cehpsvuytdriikxtukmb` está na conta Lovable e precisa ser abandonado/rotacionado na migração. |
@@ -345,3 +345,41 @@ enviado pelo fundo. **Ponto a validar com a Estefany/Lavínia.**
 |---|---|---|
 | `docs/comunicacao/mensagem-estefany.md` | Estefany | Acesso ao Supabase, token do HubSpot, e-mail remetente, pasta de documentos, congelamento do Lovable, acesso da Valora |
 | `docs/comunicacao/mensagem-victor-betini.md` | Victor Betini | VPS separada, viabilidade do RDS, backup S3, DNS do subdomínio, padrão de segurança da TI |
+
+---
+
+## 11. Correção do achado S1 — 03/09/2026
+
+A avaliação inicial de S1 ("12 políticas com `USING (true)`") foi feita a partir dos
+`CREATE POLICY` das migrations, sem considerar os `DROP POLICY` posteriores. Reconstruindo
+o estado final na ordem cronológica, a migration `20260730143936` já endureceu boa parte.
+
+**Estado real, por tabela:**
+
+| Tabela | Policy de SELECT | Avaliação |
+|---|---|---|
+| `clientes_limites` | `has_role(uid,'admin')` | ✅ Corrigida em 30/07 |
+| `import_history` | `has_role(uid,'admin')` | ✅ Corrigida em 30/07 |
+| `operacoes_ativas` | `is_staff(uid)` | ⚠️ Qualquer usuário com papel |
+| `operacoes_snapshots` | `is_staff(uid)` | ⚠️ idem |
+| `operacoes_projecoes` | `is_staff(uid)` | ⚠️ idem |
+| `operacoes_divergencias` | `is_staff(uid)` | ⚠️ idem |
+| `operacoes_checklists` | `is_staff(uid)` | ⚠️ idem |
+| `operacoes_overrides` | `is_staff(uid)` | ⚠️ idem |
+| `operacoes_parcelas_manuais` | `is_staff(uid)` | ⚠️ idem |
+| **`clientes_pre_aprovados`** | **`USING (true)`** | ❌ **Aberta a qualquer autenticado** |
+| `staging_parcelas` | `has_role(uid,'admin')` | ✅ |
+| `cdi_cache`, `cdi_daily`, `holidays` | leitura pública | ✅ Aceitável — CDI e feriados são dados públicos |
+
+**O que muda na conclusão:** a gravidade continua **Alta**, mas por outro motivo.
+
+1. `clientes_pre_aprovados` foi criada em **26/08**, depois do endurecimento de 30/07, e nasceu
+   com `USING (true)`. É a carteira de clientes pré-aprovados exposta a qualquer conta logada —
+   a falha mais séria da base hoje.
+2. `is_staff()` verifica apenas se existe **alguma** linha em `user_roles`. Não distingue
+   `admin` de `user`, não consulta `user_page_access` e não conhece a noção de usuário externo.
+   Como o time da Valora vai precisar de um papel para autenticar, eles entrariam já enxergando
+   toda a base operacional — parcelas, projeções, divergências, limites de clientes.
+
+O `user_page_access` continua sendo **apenas cosmético**: o front esconde o menu, o banco entrega
+o dado. Essa é a lacuna que a Story 2.1 fecha.

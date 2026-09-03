@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { KeyRound } from "lucide-react";
+import { REQUISITOS_SENHA, SENHA_MINIMA, validarNovaSenha } from "@/utils/passwordPolicy";
 
 type BtnVariant = "default" | "outline" | "ghost" | "secondary" | "link" | "destructive";
 type BtnSize = "default" | "sm" | "lg" | "icon";
@@ -31,12 +32,10 @@ export const ChangePasswordButton = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) {
-      toast({ title: "Senha muito curta", description: "Mínimo de 6 caracteres.", variant: "destructive" });
-      return;
-    }
-    if (password !== confirm) {
-      toast({ title: "As senhas não coincidem", variant: "destructive" });
+    // Mesma política aplicada na redefinição por e-mail (Story 2.4).
+    const problema = validarNovaSenha(password, confirm);
+    if (problema) {
+      toast({ title: "Senha inválida", description: problema, variant: "destructive" });
       return;
     }
     setSaving(true);
@@ -70,11 +69,28 @@ export const ChangePasswordButton = ({
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <Label htmlFor="new-pwd">Nova senha</Label>
-            <Input id="new-pwd" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+            <Input
+              id="new-pwd"
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={SENHA_MINIMA}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">{REQUISITOS_SENHA}</p>
           </div>
           <div>
             <Label htmlFor="confirm-pwd">Confirmar nova senha</Label>
-            <Input id="confirm-pwd" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required minLength={6} />
+            <Input
+              id="confirm-pwd"
+              type="password"
+              autoComplete="new-password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              required
+              minLength={SENHA_MINIMA}
+            />
           </div>
           <DialogFooter>
             <Button type="submit" variant="gradient" disabled={saving} className="w-full">
