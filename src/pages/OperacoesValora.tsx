@@ -15,8 +15,8 @@ import {
   salvarOperacao,
   type Operacao,
 } from "@/services/operacoes";
-import { notificar } from "@/services/notificacoes";
-import { tituloEtapa } from "@/services/operacoes";
+import { notificar, type EventoNotificacao } from "@/services/notificacoes";
+import { toast } from "@/hooks/use-toast";
 
 const OperacoesValora = () => {
   const navigate = useNavigate();
@@ -34,9 +34,40 @@ const OperacoesValora = () => {
 
   const selecionada = operacoes.find((o) => o.id === selecionadaId) ?? null;
 
-  const atualizar = (op: Operacao) => {
+  /** Aplica a alteração na tela e persiste. Erro de gravação vira aviso visível. */
+  const atualizar = async (op: Operacao) => {
     setOperacoes((prev) => prev.map((o) => (o.id === op.id ? op : o)));
-    void salvarOperacao(op); // TODO: integração real aqui — persistir + sync HubSpot
+    try {
+      await salvarOperacao(op);
+      return true;
+    } catch (err: unknown) {
+      console.error("[operacoes] falha ao salvar", err);
+      toast({
+        title: "Não foi possível salvar a operação",
+        description:
+          err instanceof Error && err.message ? err.message : "Tente novamente em instantes.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
+  /**
+   * Salva e só então notifica.
+   *
+   * A ordem importa por dois motivos: a edge function de e-mail lê a operação
+   * do banco (se notificasse antes, o e-mail sairia com a etapa anterior), e um
+   * e-mail avisando de uma mudança que não chegou a ser gravada seria pior do
+   * que nenhum e-mail.
+   */
+  const salvarENotificar = async (
+    op: Operacao,
+    evento: EventoNotificacao,
+    detalhe?: string,
+  ) => {
+    const salvou = await atualizar(op);
+    if (!salvou) return;
+    await notificar(evento, op, detalhe);
   };
 
   const handleDecisao = (
@@ -49,8 +80,7 @@ const OperacoesValora = () => {
         { ...moverEtapa(op, "aguardando_contrato"), alerta: null },
         "Operação aprovada — aguardando emissão de contrato"
       );
-      atualizar(novo);
-      void notificar("aprovado", novo, undefined, undefined, tituloEtapa(novo.etapa));
+      void salvarENotificar(novo, "aprovado");
       return;
     }
     if (decisao === "falta_doc") {
@@ -61,9 +91,8 @@ const OperacoesValora = () => {
         },
         `Falta documentação — devolvido para recolhimento: ${texto ?? ""}`
       );
-      atualizar(novo);
       void criarPastaDocumentos(novo);
-      void notificar("falta_documentacao", novo, undefined, texto, tituloEtapa(novo.etapa));
+      void salvarENotificar(novo, "falta_documentacao", texto);
       return;
     }
     const novo = registrarMovimentacao(
@@ -73,8 +102,7 @@ const OperacoesValora = () => {
       },
       `Operação reprovada — devolvido para recolhimento: ${texto ?? ""}`
     );
-    atualizar(novo);
-    void notificar("reprovado", novo, undefined, texto, tituloEtapa(novo.etapa));
+    void salvarENotificar(novo, "reprovado", texto);
   };
 
   const handleEnviarAnalise = (op: Operacao) => {
@@ -82,8 +110,7 @@ const OperacoesValora = () => {
       { ...moverEtapa(op, "analise"), alerta: null },
       "Enviado para análise do fornecedor"
     );
-    atualizar(novo);
-    void notificar("enviado_analise", novo, undefined, undefined, tituloEtapa(novo.etapa));
+    void salvarENotificar(novo, "enviado_analise");
   };
 
   const handleDesembolso = (op: Operacao, comprovante: string) => {
@@ -91,20 +118,17 @@ const OperacoesValora = () => {
       { ...moverEtapa(op, "desembolsado"), comprovanteDesembolso: comprovante, alerta: null },
       `Comprovante de pagamento anexado (${comprovante}) — operação desembolsada`
     );
-    atualizar(novo);
-    void notificar("desembolsado", novo, undefined, undefined, tituloEtapa(novo.etapa));
+    void salvarENotificar(novo, "desembolsado");
   };
 
   const handleAssinaturasConcluidas = (op: Operacao) => {
     const novo = registrarMovimentacao(op, "Todas as assinaturas concluídas");
-    atualizar(novo);
-    void notificar("assinaturas_concluidas", novo, undefined, undefined, tituloEtapa(novo.etapa));
+    void salvarENotificar(novo, "assinaturas_concluidas");
   };
 
   const handleContratoEmitido = (op: Operacao) => {
     const novo = registrarMovimentacao(op, "Contrato emitido");
-    atualizar(novo);
-    void notificar("contrato_emitido", novo, undefined, undefined, tituloEtapa(novo.etapa));
+    void salvarENotificar(novo, "contrato_emitido");
   };
 
   const colunas = ETAPAS.filter((e) => !e.oculta);

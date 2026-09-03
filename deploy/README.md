@@ -44,6 +44,33 @@ A diretiva `connect-src` em `deploy/nginx.conf` precisa listar o domínio real d
 Supabase. Enquanto estiver em domínio provisório, inclua-o também — senão o
 navegador bloqueia todas as chamadas e a tela fica em branco sem erro visível.
 
+### Cabeçalhos HTTP — nginx ou Traefik?
+
+Os cabeçalhos de segurança já vão no `deploy/nginx.conf`, **dentro da imagem**. Essa é uma
+diferença deliberada em relação ao Hub MaisTODOS, cujo `SECURITY.md` deixa os headers como
+pendência com o time de infra ("Pendente — Time de Infra"): lá eles dependem de alguém
+configurar o Traefik; aqui nós controlamos o nginx e não dependemos de ninguém.
+
+Se o time de infra preferir centralizar no Traefik do Dokploy, os labels equivalentes são:
+
+```yaml
+labels:
+  - "traefik.http.middlewares.credito-headers.headers.stsSeconds=63072000"
+  - "traefik.http.middlewares.credito-headers.headers.stsIncludeSubdomains=true"
+  - "traefik.http.middlewares.credito-headers.headers.stsPreload=true"
+  - "traefik.http.middlewares.credito-headers.headers.contentTypeNosniff=true"
+  - "traefik.http.middlewares.credito-headers.headers.frameDeny=true"
+  - "traefik.http.middlewares.credito-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
+  - "traefik.http.middlewares.credito-headers.headers.permissionsPolicy=camera=(), microphone=(), geolocation=(), interest-cohort=()"
+  - "traefik.http.routers.credito.middlewares=credito-headers@docker"
+```
+
+> Se ativar no Traefik, **remova os `add_header` correspondentes do nginx** para não duplicar.
+> Cabeçalho duplicado não soma proteção e confunde auditoria.
+
+Validar pós-deploy em https://securityheaders.com/ — meta nota **A** ou **A+**, mesmo alvo
+definido no padrão do Hub.
+
 ---
 
 ## 2. Supabase self-hosted

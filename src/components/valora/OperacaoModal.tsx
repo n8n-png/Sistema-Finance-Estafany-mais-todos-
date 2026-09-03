@@ -160,7 +160,7 @@ export const OperacaoModal = ({
       toast({ title: "Nenhum usuário logado", variant: "destructive" });
       return;
     }
-    void enviarEmailTeste(op, user.email);
+    void enviarEmailTeste(op);
   };
 
   const confirmarDecisao = (decisao: "falta_doc" | "reprovado") => {

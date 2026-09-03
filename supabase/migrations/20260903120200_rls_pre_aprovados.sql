@@ -24,7 +24,7 @@ RETURNS boolean
 LANGUAGE sql
 STABLE
 SECURITY INVOKER
-SET search_path = public
+SET search_path = public, pg_catalog
 AS $$
   SELECT public.has_role(_user_id, 'admin')
       OR EXISTS (

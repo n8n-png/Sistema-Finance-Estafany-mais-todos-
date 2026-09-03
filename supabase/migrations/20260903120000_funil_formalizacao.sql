@@ -229,7 +229,7 @@ CREATE TRIGGER trg_form_sla_updated_at
 CREATE OR REPLACE FUNCTION public.operacao_formalizacao_reset_sla()
 RETURNS TRIGGER
 LANGUAGE plpgsql
-SET search_path = public
+SET search_path = public, pg_catalog
 AS $$
 BEGIN
   IF NEW.etapa IS DISTINCT FROM OLD.etapa THEN
@@ -250,7 +250,7 @@ CREATE OR REPLACE FUNCTION public.operacao_formalizacao_audita()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_catalog
 AS $$
 DECLARE
   v_autor_id uuid;

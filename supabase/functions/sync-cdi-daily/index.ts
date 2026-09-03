@@ -1,10 +1,24 @@
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { corsHeaders, exigirUsuario } from '../_shared/auth.ts';
 
 // Sincroniza a série 12 do BCB (CDI diário, % ao dia) na tabela public.cdi_daily.
 // Idempotente: só busca datas a partir do último registro existente.
+//
+// Story 2.7 — passou a exigir usuário autenticado.
+//
+// Antes: sem verificação nenhuma, usando `service_role`. Esta é a mais sensível
+// das duas functions de CDI a chamadas repetidas: varre janelas anuais desde
+// 2020 com retry e backoff. Sem autenticação, qualquer pessoa com a URL podia
+// mantê-la em loop — consumindo nosso tempo de execução e martelando a API do
+// BCB em nome da MaisTODOS, com risco de bloqueio de lá.
+//
+// É chamada uma vez por sessão pelo `useCdiDaily`, sempre com usuário logado,
+// então exigir autenticação não muda nada no fluxo real.
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  const auth = await exigirUsuario(req);
+  if (!auth.ok) return auth.response;
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,

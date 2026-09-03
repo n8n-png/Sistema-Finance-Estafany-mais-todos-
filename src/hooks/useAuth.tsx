@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { initCDI } from "@/utils/cdi";
 
 interface AuthContextValue {
   user: User | null;
@@ -39,6 +40,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (newSession?.user) {
         setAdminLoading(true);
         setTimeout(() => checkAdmin(newSession.user.id), 0);
+        // `fetch-cdi` exige autenticação (Story 2.7): a carga da taxa acontece
+        // aqui, e não no import do App, que roda antes de existir sessão.
+        void initCDI();
       } else {
         setIsAdmin(false);
         setAdminLoading(false);
@@ -50,6 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         checkAdmin(session.user.id);
+        void initCDI();
       } else {
         setAdminLoading(false);
       }

@@ -10,7 +10,6 @@ import NotFound from "./pages/NotFound";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { initCDI } from "@/utils/cdi";
 import { lazyRetry, clearChunkReloadFlag } from "@/utils/lazyWithReload";
 
 clearChunkReloadFlag();
@@ -21,8 +20,6 @@ const AdminLimites = lazy(lazyRetry(() => import("./pages/AdminLimites")));
 const Ativos = lazy(lazyRetry(() => import("./pages/Ativos")));
 const CentralDocumentos = lazy(lazyRetry(() => import("./pages/CentralDocumentos")));
 const OperacoesValora = lazy(lazyRetry(() => import("./pages/OperacoesValora")));
-
-initCDI();
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -28,3 +28,6 @@ dist-ssr
 .env.local
 .env.*.local
 !.env.example
+
+# Pacote de evolução (gerado por npm run export:evolucao)
+export/

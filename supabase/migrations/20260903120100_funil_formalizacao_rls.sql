@@ -72,7 +72,7 @@ RETURNS boolean
 LANGUAGE sql
 STABLE
 SECURITY INVOKER
-SET search_path = public
+SET search_path = public, pg_catalog
 AS $$
   SELECT CASE
     WHEN public.has_role(_user_id, 'admin') THEN true
@@ -98,7 +98,7 @@ RETURNS boolean
 LANGUAGE sql
 STABLE
 SECURITY INVOKER
-SET search_path = public
+SET search_path = public, pg_catalog
 AS $$
   SELECT CASE
     WHEN public.has_role(_user_id, 'admin') THEN true
@@ -122,7 +122,7 @@ RETURNS boolean
 LANGUAGE sql
 STABLE
 SECURITY INVOKER
-SET search_path = public
+SET search_path = public, pg_catalog
 AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.operacoes_formalizacao o
@@ -135,7 +135,7 @@ RETURNS boolean
 LANGUAGE sql
 STABLE
 SECURITY INVOKER
-SET search_path = public
+SET search_path = public, pg_catalog
 AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.operacoes_formalizacao o

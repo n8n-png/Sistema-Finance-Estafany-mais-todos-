@@ -21,7 +21,17 @@ export interface UsuarioAutenticado {
 }
 
 export type ResultadoAuth =
-  | { ok: true; user: UsuarioAutenticado }
+  | {
+      ok: true;
+      user: UsuarioAutenticado;
+      /**
+       * Client autenticado como o próprio usuário. Consultas feitas por ele
+       * passam pela RLS — use-o sempre que a pergunta for "este usuário pode
+       * ver isto?", em vez de consultar com service_role e checar na mão.
+       */
+      // deno-lint-ignore no-explicit-any
+      userClient: any;
+    }
   | { ok: false; response: Response };
 
 /** Exige um JWT válido de usuário no header Authorization. */
@@ -51,7 +61,11 @@ export async function exigirUsuario(req: Request): Promise<ResultadoAuth> {
     return { ok: false, response: json({ error: "Não autenticado" }, 401) };
   }
 
-  return { ok: true, user: { id: user.id, email: user.email ?? undefined } };
+  return {
+    ok: true,
+    user: { id: user.id, email: user.email ?? undefined },
+    userClient,
+  };
 }
 
 /** Exige um JWT válido cujo dono tenha o papel `admin`. */

@@ -23,10 +23,10 @@ Legenda de bloqueio:
 | Épico | Título | Stories | Status |
 |---|---|---|---|
 | **E1** | Fundação e migração de infraestrutura | 5 | 2/5 |
-| **E2** | Segurança e controle de acesso | 6 | 4/6 (+1 parcial) |
+| **E2** | Segurança e controle de acesso | 8 | 6/8 (+1 parcial) |
 | **E3** | Funil de formalização persistido | 6 | 3/6 |
 | **E4** | Integrações externas | 4 | 0/4 |
-| **E5** | Esteira de evolução contínua | 1 | 0/1 |
+| **E5** | Esteira de evolução contínua | 1 | 1/1 |
 
 ---
 
@@ -78,7 +78,7 @@ tarefa da Sprint 2, assim que houver banco.
 | Story | Título | Bloqueio | Status |
 |---|---|---|---|
 | **1.2** | Empacotamento e deploy no Dokploy | 🟡 Victor: VPS separada? | ✅ App pronto; Supabase documentado |
-| **1.3** | Migração de schema e dados do Supabase do Lovable | 🔴 Estefany: acesso ao projeto | Pendente |
+| **1.3** | ~~Migração de dados do Lovable~~ → **Banco criado do zero** | 🟢 projeto não localizado, decisão de 03/09 | Reescopada — ver `docs/03-decisoes-e-pendencias.md` §2 |
 | **1.4** | Publicação + domínio provisório | 🔴 Victor: DNS | Pendente |
 | **1.5** | Backup diário para S3 | 🔴 Victor: bucket + IAM | Pendente |
 
@@ -91,7 +91,9 @@ tarefa da Sprint 2, assim que houver banco.
 | **2.4** | Corrigir o fluxo de redefinição de senha | 🟢 | ✅ Concluída (antecipada) |
 | **2.5** | Autenticar as edge functions e remover o gateway Lovable | 🟢 | ✅ Concluída (antecipada) |
 | **2.6** | Dependências vulneráveis | 🟢 | ✅ Concluída (antecipada) |
-| **2.3** | Login Google (Workspace MaisTODOS) | 🟡 política de acesso da Valora | Pendente |
+| **2.7** | Conformidade com o padrão de segurança da MaisTODOS | 🟢 | ✅ Concluída |
+| **2.8** | Auditar `fetch-cdi` e `sync-cdi-daily` | 🟢 | ✅ Concluída |
+| **2.3** | Login Google (interno) + provedor para o fundo | 🟡 o fundo usa **Outlook** — ver decisão §6 | Pendente |
 
 ---
 
@@ -99,19 +101,20 @@ tarefa da Sprint 2, assim que houver banco.
 
 | Story | Título | Bloqueio |
 |---|---|---|
-| **4.1** | Sync HubSpot → Painel (entrada de operações) | 🔴 token do app privado |
+| **4.0** | Descoberta do HubSpot (pipeline, etapas, propriedades) | 🟢 token recebido | ✅ Script pronto — `npm run hubspot:descobrir` |
+| **4.1** | Sync HubSpot → Painel (entrada de operações) | 🟡 falta validar o pareamento das etapas |
 | **4.2** | Sync Painel → HubSpot (etapas 5 e 6) | 🔴 token com escopo de escrita |
-| **3.6** | Notificação por e-mail real a cada mudança de etapa | 🔴 decisão do remetente |
+| **3.6** | Notificação por e-mail real a cada mudança de etapa | 🔴 DNS (SPF/DKIM) com o time de infra |
 
 ---
 
 ## Sprint 5 — Integrações finais
 
-| Story | Título | Bloqueio |
-|---|---|---|
-| **4.3** | Flixsign — polling de status de assinatura | 🔴 credencial + origem do `envelopeId` |
-| **4.4** | OKRs do Notion na tela central | 🔴 permissão N2 |
-| **5.1** | Esteira de evolução (export HTML + processo) | 🟢 |
+| Story | Título | Bloqueio | Status |
+|---|---|---|---|
+| **4.3** | Flixsign — polling de status de assinatura | 🔴 credencial + origem do `envelopeId` | Pendente |
+| **4.4** | OKRs do Notion na tela central | 🔴 permissão N2 | Pendente |
+| **5.1** | Esteira de evolução (pacote de contexto + processo) | 🟢 | ✅ Concluída |
 
 ---
 

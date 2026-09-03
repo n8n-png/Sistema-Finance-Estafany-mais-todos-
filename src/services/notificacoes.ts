@@ -1,6 +1,5 @@
 import { toast } from "@/hooks/use-toast";
-import type { Operacao } from "./operacoes";
-import { formatCurrency } from "@/utils/currency";
+import type { Operacao } from "./operacoes.types";
 import { supabase } from "@/integrations/supabase/client";
 
 export type EventoNotificacao =
@@ -13,99 +12,56 @@ export type EventoNotificacao =
   | "desembolsado"
   | "teste";
 
-const assunto = (evento: EventoNotificacao, op: Operacao): string => {
-  const base = `Operação ${op.unidade}`;
-  switch (evento) {
-    case "enviado_analise":
-      return `${base} — enviada para análise do fornecedor`;
-    case "aprovado":
-      return `${base} aprovada`;
-    case "falta_documentacao":
-      return `${base} — falta documentação`;
-    case "reprovado":
-      return `${base} reprovada`;
-    case "contrato_emitido":
-      return `${base} — contrato emitido, assinaturas pendentes`;
-    case "assinaturas_concluidas":
-      return `${base} — todas as assinaturas concluídas`;
-    case "desembolsado":
-      return `${base} desembolsada (${formatCurrency(op.valor)})`;
-    case "teste":
-      return `[Teste] ${base} — exemplo de notificação`;
-  }
-};
-
-const corpo = (evento: EventoNotificacao, op: Operacao, etapaTitulo: string, detalhe?: string) => `
-  <div style="font-family: Arial, Helvetica, sans-serif; color:#1a1a1a; max-width:560px">
-    <h2 style="color:#7200d6; margin:0 0 12px">${assunto(evento, op)}</h2>
-    <p style="margin:0 0 16px">A operação abaixo mudou de etapa no Painel de Crédito PJ.</p>
-    <table style="border-collapse:collapse; font-size:14px">
-      <tr><td style="padding:4px 12px 4px 0; color:#6b7280">Unidade</td><td><strong>${op.unidade}</strong></td></tr>
-      <tr><td style="padding:4px 12px 4px 0; color:#6b7280">Linha de crédito</td><td>${op.linha}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0; color:#6b7280">Fundo</td><td>${op.fundo}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0; color:#6b7280">Valor</td><td>${formatCurrency(op.valor)}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0; color:#6b7280">Taxa</td><td>${op.taxa}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0; color:#6b7280">Prazo</td><td>${op.prazoMeses}x</td></tr>
-      <tr><td style="padding:4px 12px 4px 0; color:#6b7280">Etapa atual</td><td><strong>${etapaTitulo}</strong></td></tr>
-    </table>
-    ${detalhe ? `<p style="margin:16px 0 0; padding:12px; background:#f5f0ff; border-left:4px solid #7200d6"><strong>Observação:</strong> ${detalhe}</p>` : ""}
-    <p style="margin:24px 0 0; font-size:12px; color:#6b7280">MaisTODOS — Painel de Crédito PJ</p>
-  </div>
-`;
-
 /**
- * Envia a notificação do evento por e-mail.
- * Usa a edge function `send-operacao-email`, que fala direto com o Resend e
- * exige usuário autenticado (Story 2.5). Enquanto `RESEND_API_KEY` e
- * `EMAIL_REMETENTE` não estiverem configurados no ambiente, a function responde
- * em modo simulado — o fluxo roda inteiro, só não sai e-mail.
+ * Dispara a notificação da operação por e-mail.
+ *
+ * O corpo do e-mail e a lista de destinatários **não são montados aqui**.
+ * A edge function `send-operacao-email` lê a operação no banco (passando pela
+ * RLS), monta o HTML e envia para os destinatários cadastrados na própria
+ * operação. Daqui vai só o identificador da operação, o evento e uma observação
+ * opcional.
+ *
+ * Por que assim: enquanto o cliente montava o HTML e escolhia os destinatários,
+ * qualquer conta autenticada — inclusive do time externo do fundo — podia
+ * disparar conteúdo arbitrário com a marca da MaisTODOS. Movendo a montagem
+ * para o servidor, o vetor deixa de existir por construção.
  */
 export async function notificar(
   evento: EventoNotificacao,
-  dadosOperacao: Operacao,
-  destinatarios: string[] = dadosOperacao.destinatarios ?? [],
+  operacao: Operacao,
   detalhe?: string,
-  etapaTitulo: string = dadosOperacao.etapa
-) {
-  const subject = assunto(evento, dadosOperacao);
-
-  if (destinatarios.length === 0) {
-    toast({
-      title: "Nenhum destinatário definido",
-      description: "Selecione os destinatários de e-mail no card da operação.",
-      variant: "destructive",
-    });
-    return;
-  }
-
+): Promise<void> {
   try {
     const { data, error } = await supabase.functions.invoke("send-operacao-email", {
-      body: {
-        to: destinatarios,
-        subject,
-        html: corpo(evento, dadosOperacao, etapaTitulo, detalhe),
-      },
+      body: { operacao_id: operacao.id, evento, detalhe },
     });
     if (error) throw error;
-    const simulado = !!(data as any)?.simulated;
+
+    const resposta = data as { simulated?: boolean; to?: string[]; subject?: string } | null;
+    const destinatarios = resposta?.to ?? [];
+    const simulado = !!resposta?.simulated;
+
     toast({
       title: simulado
         ? `E-mail simulado para: ${destinatarios.join(", ")}`
         : `E-mail enviado para: ${destinatarios.join(", ")}`,
       description: simulado
-        ? `Assunto: ${subject} — configure RESEND_API_KEY e EMAIL_REMETENTE para envio real.`
-        : `Assunto: ${subject}`,
+        ? `${resposta?.subject ?? ""} — configure RESEND_API_KEY e EMAIL_REMETENTE para envio real.`
+        : (resposta?.subject ?? ""),
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("[notificar] falha", err);
     toast({
       title: "Falha ao enviar e-mail",
-      description: err?.message ?? "Erro desconhecido",
+      description:
+        err instanceof Error && err.message ? err.message : "Erro desconhecido",
       variant: "destructive",
     });
   }
 }
 
-/** Envia um e-mail de exemplo para o usuário logado. */
-export const enviarEmailTeste = (op: Operacao, email: string) =>
-  notificar("teste", op, [email], "E-mail de exemplo para validação de layout e conteúdo.");
+/**
+ * Envia um e-mail de exemplo. O destinatário é sempre o próprio usuário
+ * autenticado — resolvido no servidor, não informado pelo cliente.
+ */
+export const enviarEmailTeste = (op: Operacao) => notificar("teste", op);

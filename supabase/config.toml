@@ -1,1 +1,42 @@
+# Configuração do projeto Supabase.
+#
+# project_id é substituído quando o banco próprio subir — hoje ainda aponta para
+# o projeto do Lovable.
 project_id = "cehpsvuytdriikxtukmb"
+
+# ============================================================================
+# Edge Functions — verify_jwt = true em todas
+#
+# Padrão adotado no Hub MaisTODOS (ver SECURITY.md, auditoria externa de
+# 19/05/2026, Vuln 1): o Supabase rejeita JWT inválido ou ausente ANTES de
+# invocar a função. É defesa em profundidade: cada function também valida o
+# usuário no próprio código (`_shared/auth.ts`), mas assim um endpoint nunca
+# chega a executar por engano se alguém esquecer a verificação interna.
+#
+# O default do Supabase já é true; declarar explicitamente evita que uma
+# function nova nasça aberta por omissão.
+# ============================================================================
+
+[functions.admin-create-user]
+verify_jwt = true
+
+[functions.admin-manage-users]
+verify_jwt = true
+
+[functions.bulk-import-parcelas]
+verify_jwt = true
+
+[functions.fetch-cdi]
+verify_jwt = true
+
+[functions.forward-to-n8n]
+verify_jwt = true
+
+[functions.reconcile-operacoes]
+verify_jwt = true
+
+[functions.send-operacao-email]
+verify_jwt = true
+
+[functions.sync-cdi-daily]
+verify_jwt = true
