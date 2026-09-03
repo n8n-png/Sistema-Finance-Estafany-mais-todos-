@@ -267,3 +267,81 @@ Base: `https://api.flix-sign.com`
 | Vulnerabilidades de build | `vite`, `rollup`, `postcss`, `esbuild` e cadeia do eslint — só afetam o ambiente de desenvolvimento. |
 | `supabase/config.toml` | Ainda aponta para `project_id = "cehpsvuytdriikxtukmb"` (projeto do Lovable). Trocar quando o Supabase próprio subir. |
 | `.env` local | Ainda aponta para o Supabase do Lovable — é o que permite rodar local hoje. Trocar na Fase 1. |
+
+---
+
+## 10. Respostas e revisão de arquitetura — 03/09/2026
+
+### 10.1 Pendências resolvidas
+
+| # | Item | Resposta |
+|---|---|---|
+| 4 | Repositório | Desenvolvimento no GitHub pessoal (`mtorquato1910@gmail.com`); o repositório oficial é o da MaisTODOS, sob a conta `n8n@maistodos.com.br`, onde o Matheus é colaborador. |
+| 6 | Fonte da verdade HubSpot × Painel | **Aprovado.** HubSpot manda nas etapas 1–2; o Painel manda nas 4–6. |
+| 7 | n8n | Migrar o `maistodossa.app.n8n.cloud` para o Dokploy, junto com a aplicação, em momento posterior. |
+| 8 | Flixsign | O fundo emite o contrato. O painel apenas **lê o status** — reduz muito o escopo da integração: não precisa de `CreateDocument`, `AddSignatory` nem `SendToSignature`, só `GetEnvelope` + `GetEnvelopeDocuments` em polling. |
+| 11 | Prazo | Desconsiderado — o 1º de setembro não vale. Sem pressão de data. |
+| 1, 5, 9, 10 | Supabase, HubSpot, e-mail, documentos | Pedidos consolidados em `docs/comunicacao/mensagem-estefany.md`. |
+| 2, 3 | Infra | Levantados; mudam a arquitetura — ver 10.2. |
+
+### 10.2 REVISÃO CRÍTICA: o RDS não serve para o Supabase self-hosted
+
+O levantamento do ambiente derruba a premissa da decisão nº 1 tomada mais cedo hoje.
+
+**Ambiente real do Dokploy:**
+
+| Item | Valor |
+|---|---|
+| Provedor | **Hostinger (VPS)** — não é EC2, não está em VPC da AWS |
+| RAM | 7,75 GB total · 2,76 GB em uso → **~5 GB livres** |
+| Disco | 95,82 GB · 15,43 GB usados → ~80 GB livres |
+| Carga | 7 services / 3 projects — Hub P&C e Faturamento **em produção** |
+| Backup | **Nenhum destino S3 configurado** |
+| Responsável | victor.betini@maistodos.com.br |
+
+**Dois bloqueios independentes:**
+
+1. **Extensões.** O Supabase self-hosted exige `pgjwt`, `pg_net`, `pgsodium`, `pg_graphql`
+   e `supabase_vault`. O RDS não as oferece e não concede superuser. Este bloqueio é
+   técnico e **não tem contorno de rede**.
+2. **Rede.** Com o Dokploy fora da VPC, restam RDS público com security group travado no IP
+   (pode ser vetado pela segurança) ou VPN site-to-site (projeto de infra à parte).
+   Some-se a latência: se a VPS estiver fora do Brasil e o RDS em `sa-east-1`, cada query
+   custa ~200 ms e a aplicação fica inviável.
+
+**Arquitetura revisada (a ser confirmada com o Victor):**
+
+> **Postgres em container no Dokploy**, junto com o restante da stack Supabase, com
+> **backup diário para bucket S3 na AWS**. O dado permanece em infraestrutura da MaisTODOS,
+> o backup vive na AWS, e não há dependência de extensão indisponível nem de rota de rede
+> entre provedores.
+
+**Ressalva de capacidade:** ~5 GB livres contra 3–4 GB de consumo em idle da stack completa,
+dividindo a máquina com dois sistemas em produção. Se estourar, o OOM killer não escolhe a
+vítima. Duas saídas: VPS separada (preferível) ou subir com o módulo de analytics
+(Logflare/vector) desabilitado — é o componente mais pesado e o menos essencial.
+
+**Se a TI exigir que o dado more no RDS**, a stack Supabase deixa de ser viável e a aplicação
+precisa de um backend próprio sobre Postgres puro — o que joga fora Auth, RLS e as 8 Edge
+Functions. Seria outro projeto, não uma variação deste.
+
+### 10.3 Redução de escopo na integração Flixsign
+
+Como o **fundo é quem emite o contrato**, o painel fica apenas do lado da leitura:
+
+| Antes (escopo cheio) | Agora (confirmado) |
+|---|---|
+| Criar envelope, subir PDF, cadastrar signatários, ordenar, enviar para assinatura | ~~Removido~~ |
+| Ler status do envelope e dos signatários | **Mantido** — `GetEnvelope` em polling |
+| Baixar documentos assinados | **Mantido** — `GetEnvelopeDocuments` + `Download` |
+
+Restam duas dependências: a **credencial de serviço** (a conta é do fundo) e o **`envelopeId`**
+de cada operação, que precisa chegar ao painel — provavelmente digitado pelo operador ou
+enviado pelo fundo. **Ponto a validar com a Estefany/Lavínia.**
+
+### 10.4 Comunicações preparadas
+
+| Arquivo | Destinatário | Assunto |
+|---|---|---|
+| `docs/comunicacao/mensagem-estefany.md` | Estefany | Acesso ao Supabase, token do HubSpot, e-mail remetente, pasta de documentos, congelamento do Lovable, acesso da Valora |
+| `docs/comunicacao/mensagem-victor-betini.md` | Victor Betini | VPS separada, viabilidade do RDS, backup S3, DNS do subdomínio, padrão de segurança da TI |
