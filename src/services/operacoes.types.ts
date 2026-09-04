@@ -67,9 +67,22 @@ export interface Operacao {
   carenciaPrincipalMeses?: number;
   linha: LinhaCredito;
   fundo: Fundo;
-  valor: number;
+  /** Valor do contrato — o que o cliente deve. */
+  valorBruto: number;
+  /** Taxa de abertura, embutida no valor do contrato. */
+  valorTac: number;
+  /** O que deveria cair na conta: bruto − TAC. Calculado no banco. */
+  valorLiquidoPrevisto: number;
+  /** O que de fato caiu. Informado no desembolso; pode divergir do previsto. */
+  valorLiquidoDepositado?: number | null;
+  /** Rótulo exibido, ex.: "2,19% a.m. + CDI". */
   taxa: string;
+  /** Percentual de juros ao mês, estruturado. */
+  taxaPercentual?: number | null;
+  taxaTipo?: "pre" | "pos" | null;
   prazoMeses: number;
+  /** Difere do prazo quando há carência total. */
+  numeroParcelas?: number | null;
   etapa: Etapa;
   dataEntradaFunil: string; // ISO
   dataEntradaEtapa: string; // ISO — base do SLA/aging
@@ -84,6 +97,12 @@ export interface Operacao {
   /** E-mails que recebem as notificações desta operação. */
   destinatarios: string[];
   comprovanteDesembolso?: string | null;
+  /** Código da operação, ex.: PF46262IBI45. Gerado no desembolso (Story 3.8). */
+  idOperacao?: string | null;
+  /** Operação perdida no HubSpot: sai do quadro, mas o registro permanece. */
+  arquivada?: boolean;
+  arquivadaEm?: string | null;
+  arquivadaMotivo?: string | null;
   /** Identificador do deal correspondente no HubSpot (Story 4.1). */
   hubspotDealId?: string | null;
   /** Identificador do envelope na Flixsign (Story 4.3). */

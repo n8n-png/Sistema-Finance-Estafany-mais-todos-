@@ -97,6 +97,11 @@ Os dois caminhos têm custos bem diferentes:
 uso), e o espelhamento para o SharePoint como etapa seguinte. Amarrar as duas coisas na mesma
 entrega faz o SharePoint bloquear o que já funcionaria.
 
+**Descoberta de 04/09:** a captura enviada pela Lavínia mostra que o campo `link_documentos`
+do HubSpot já aponta para o **SharePoint** (`maistodoscom.sharepoint.com/:f:/s/...`). Ou seja,
+**a pasta por operação já existe lá hoje** — o pedido não é criar do zero, é integrar com o
+que já roda. Isso reduz o escopo e torna o SharePoint mais atraente que parecia.
+
 > **Pendências:** qual site e qual biblioteca do SharePoint; quem faz o registro do aplicativo
 > no Azure AD; e o que significa **"ROD"** na mensagem da Lavínia — sigla não identificada.
 

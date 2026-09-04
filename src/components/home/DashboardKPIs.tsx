@@ -154,7 +154,7 @@ export const DashboardKPIs = () => {
 
         if (!bucket) return;
         bucket.qtd += 1;
-        bucket.valor += Number(o.valor) || 0;
+        bucket.valor += Number(o.valorBruto) || 0;
       });
       return acc;
     },
@@ -178,7 +178,7 @@ export const DashboardKPIs = () => {
             valor: 0,
             ts: new Date(d.getFullYear(), d.getMonth(), 1).getTime(),
           };
-        cur.valor += Number(o.valor) || 0;
+        cur.valor += Number(o.valorBruto) || 0;
         totals.set(key, cur);
       });
       return Array.from(totals.values()).sort((a, b) => a.ts - b.ts);
@@ -204,7 +204,7 @@ export const DashboardKPIs = () => {
     },
   });
 
-  const contratadoMes = desembolsosMes?.reduce((s, o) => s + (Number(o.valor) || 0), 0);
+  const contratadoMes = desembolsosMes?.reduce((s, o) => s + (Number(o.valorBruto) || 0), 0);
   const propostasMes = desembolsosMes?.length;
 
   const total = limites?.length ?? 0;

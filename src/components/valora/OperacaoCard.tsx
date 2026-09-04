@@ -88,7 +88,7 @@ export const OperacaoCard = ({ op, onClick }: { op: Operacao; onClick: () => voi
       <div className="grid grid-cols-2 gap-1.5 text-xs">
         <div className="min-w-0">
           <p className="crm-field-label">Valor</p>
-          <div className="truncate font-semibold text-foreground">{formatCurrency(op.valor)}</div>
+          <div className="truncate font-semibold text-foreground">{formatCurrency(op.valorBruto)}</div>
         </div>
         <div className="min-w-0">
           <p className="crm-field-label">Taxa</p>

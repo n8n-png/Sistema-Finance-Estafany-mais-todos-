@@ -98,9 +98,16 @@ const montarOperacao = (
   carenciaPrincipalMeses: row.carencia_principal_meses ?? undefined,
   linha: row.linha,
   fundo: row.fundo as Operacao["fundo"],
-  valor: Number(row.valor),
+  valorBruto: Number(row.valor_bruto),
+  valorTac: Number(row.valor_tac ?? 0),
+  valorLiquidoPrevisto: Number(row.valor_liquido_previsto),
+  valorLiquidoDepositado:
+    row.valor_liquido_depositado === null ? null : Number(row.valor_liquido_depositado),
   taxa: row.taxa,
+  taxaPercentual: row.taxa_percentual === null ? null : Number(row.taxa_percentual),
+  taxaTipo: row.taxa_tipo,
   prazoMeses: row.prazo_meses,
+  numeroParcelas: row.numero_parcelas,
   etapa: row.etapa,
   dataEntradaFunil: row.data_entrada_funil,
   dataEntradaEtapa: row.data_entrada_etapa,
@@ -112,6 +119,10 @@ const montarOperacao = (
   alerta: toAlerta(row),
   destinatarios: row.destinatarios ?? [],
   comprovanteDesembolso: row.comprovante_desembolso,
+  idOperacao: row.id_operacao,
+  arquivada: row.arquivada,
+  arquivadaEm: row.arquivada_em,
+  arquivadaMotivo: row.arquivada_motivo,
   hubspotDealId: row.hubspot_deal_id,
   flixsignEnvelopeId: row.flixsign_envelope_id,
 });
@@ -139,7 +150,13 @@ const porOperacao = <T extends { operacao_id: string }>(rows: T[]) => {
  */
 export const listarOperacoesDb = async (): Promise<Operacao[]> => {
   const [ops, checklist, signatarios, pessoas, historico] = await Promise.all([
-    dbFunil.from("operacoes_formalizacao").select("*").order("data_entrada_funil", { ascending: false }),
+    // Arquivadas ficam fora do quadro — a área pediu que a operação perdida
+    // "suma do painel". O registro continua no banco (ver migration 20260904).
+    dbFunil
+      .from("operacoes_formalizacao")
+      .select("*")
+      .eq("arquivada", false)
+      .order("data_entrada_funil", { ascending: false }),
     dbFunil.from("operacoes_formalizacao_checklist").select("*"),
     dbFunil.from("operacoes_formalizacao_signatarios").select("*"),
     dbFunil.from("operacoes_formalizacao_pessoas").select("*"),
@@ -202,9 +219,15 @@ export const salvarOperacaoDb = async (op: Operacao): Promise<Operacao> => {
       cnpj: cnpjParaBanco(op.cnpj),
       linha: op.linha,
       fundo: op.fundo,
-      valor: op.valor,
+      valor_bruto: op.valorBruto,
+      valor_tac: op.valorTac,
+      // valor_liquido_previsto é coluna gerada — o banco calcula, não se grava.
+      valor_liquido_depositado: op.valorLiquidoDepositado ?? null,
       taxa: op.taxa,
+      taxa_percentual: op.taxaPercentual ?? null,
+      taxa_tipo: op.taxaTipo ?? null,
       prazo_meses: op.prazoMeses,
+      numero_parcelas: op.numeroParcelas ?? null,
       carencia_total_meses: op.carenciaTotalMeses ?? null,
       carencia_principal_meses: op.carenciaPrincipalMeses ?? null,
       conta_deposito: op.contaDeposito ?? null,
@@ -213,6 +236,7 @@ export const salvarOperacaoDb = async (op: Operacao): Promise<Operacao> => {
       alerta_mensagem: op.alerta?.mensagem ?? null,
       destinatarios: op.destinatarios ?? [],
       comprovante_desembolso: op.comprovanteDesembolso ?? null,
+      id_operacao: op.idOperacao ?? null,
       flixsign_envelope_id: op.flixsignEnvelopeId ?? null,
       origem_ultima_alteracao: "painel",
     })

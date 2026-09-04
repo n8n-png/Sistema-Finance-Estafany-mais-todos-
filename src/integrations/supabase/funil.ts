@@ -36,6 +36,7 @@ export type AlertaTipoDb = "pendencia" | "reprovado";
 export type SignatarioStatusDb = "pendente" | "assinado";
 export type PessoaPapelDb = "representante" | "avalista";
 export type OrigemAlteracaoDb = "painel" | "hubspot" | "flixsign" | "sistema";
+export type TipoTaxaDb = "pre" | "pos";
 
 export type OperacaoRow = {
   id: string;
@@ -43,9 +44,16 @@ export type OperacaoRow = {
   cnpj: string | null;
   linha: LinhaCreditoDb;
   fundo: string;
-  valor: number;
+  valor_bruto: number;
+  valor_tac: number;
+  /** Coluna gerada no banco: valor_bruto - valor_tac. Não é gravável. */
+  valor_liquido_previsto: number;
+  valor_liquido_depositado: number | null;
   taxa: string;
+  taxa_percentual: number | null;
+  taxa_tipo: TipoTaxaDb | null;
   prazo_meses: number;
+  numero_parcelas: number | null;
   carencia_total_meses: number | null;
   carencia_principal_meses: number | null;
   conta_deposito: string | null;
@@ -56,7 +64,15 @@ export type OperacaoRow = {
   alerta_mensagem: string | null;
   destinatarios: string[];
   comprovante_desembolso: string | null;
+  id_operacao: string | null;
+  arquivada: boolean;
+  arquivada_em: string | null;
+  arquivada_motivo: string | null;
   hubspot_deal_id: string | null;
+  hubspot_stage_id: string | null;
+  data_analise_fundo: string | null;
+  data_formalizacao: string | null;
+  data_credito_concedido: string | null;
   flixsign_envelope_id: string | null;
   origem_ultima_alteracao: OrigemAlteracaoDb;
   sincronizado_em: string | null;
@@ -163,6 +179,7 @@ export type FunilDatabase = {
         linha_credito: LinhaCreditoDb;
         alerta_tipo: AlertaTipoDb;
         signatario_status: SignatarioStatusDb;
+      tipo_taxa: TipoTaxaDb;
         pessoa_papel: PessoaPapelDb;
         origem_alteracao: OrigemAlteracaoDb;
       }

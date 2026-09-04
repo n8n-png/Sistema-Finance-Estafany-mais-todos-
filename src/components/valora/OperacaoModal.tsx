@@ -208,7 +208,7 @@ export const OperacaoModal = ({
         regime: p.regime ?? "",
       })),
       dadosBancarios: op.contaDeposito ?? "",
-      opValor: formatCurrency(op.valor),
+      opValor: formatCurrency(op.valorBruto),
       opTaxa: (op.taxa.match(/[\d.,]+/)?.[0] ?? "").trim(),
       opPrazo: String(op.prazoMeses),
       ...carencia,
@@ -294,15 +294,46 @@ export const OperacaoModal = ({
                 </div>
               </div>
 
+              {/*
+                Os três valores lado a lado — pedido da Lavínia em 04/09/2026,
+                depois de a Valora depositar errado por confundir o valor da TAC
+                com o valor da operação.
+
+                O líquido não é editável de propósito: ele é derivado (bruto − TAC)
+                e calculado no banco. Deixá-lo digitável recriaria exatamente a
+                ambiguidade que causou o erro.
+              */}
               <div className="space-y-1">
-                <Label htmlFor="op-valor" className="text-brand-gray">Valor (R$)</Label>
+                <Label htmlFor="op-valor" className="text-brand-gray">Valor bruto (R$)</Label>
                 <Input
                   id="op-valor"
                   type="number"
                   min={0}
-                  value={op.valor}
-                  onChange={(e) => setCampo({ valor: Number(e.target.value) || 0 })}
+                  step="0.01"
+                  value={op.valorBruto}
+                  onChange={(e) => setCampo({ valorBruto: Number(e.target.value) || 0 })}
                 />
+                <p className="text-xs text-muted-foreground">Valor do contrato — o que o cliente deve</p>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="op-tac" className="text-brand-gray">Valor da TAC (R$)</Label>
+                <Input
+                  id="op-tac"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={op.valorTac}
+                  onChange={(e) => setCampo({ valorTac: Number(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-brand-gray">Valor líquido (R$)</Label>
+                <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted px-3 text-sm font-bold">
+                  {formatCurrency(Math.max(0, op.valorBruto - op.valorTac))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  O que deve cair na conta — calculado (bruto − TAC)
+                </p>
               </div>
               <div className="space-y-1">
                 <Label htmlFor="op-taxa" className="text-brand-gray">Taxa</Label>
@@ -359,7 +390,9 @@ export const OperacaoModal = ({
               <div><dt className="text-brand-gray">Linha de crédito</dt><dd className="font-bold">{op.linha}</dd></div>
               {/* TODO: integração real com HubSpot aqui. */}
               <div><dt className="text-brand-gray">Fundo responsável</dt><dd className="font-bold">{op.fundo}</dd></div>
-              <div><dt className="text-brand-gray">Valor</dt><dd className="font-bold">{formatCurrency(op.valor)}</dd></div>
+              <div><dt className="text-brand-gray">Valor bruto</dt><dd className="font-bold">{formatCurrency(op.valorBruto)}</dd></div>
+              <div><dt className="text-brand-gray">Valor da TAC</dt><dd className="font-bold">{formatCurrency(op.valorTac)}</dd></div>
+              <div><dt className="text-brand-gray">Valor líquido</dt><dd className="font-bold">{formatCurrency(Math.max(0, op.valorBruto - op.valorTac))}</dd></div>
               <div><dt className="text-brand-gray">Taxa</dt><dd className="font-bold">{op.taxa}</dd></div>
               <div><dt className="text-brand-gray">Prazo</dt><dd className="font-bold">{op.prazoMeses}x</dd></div>
               <div>
