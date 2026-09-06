@@ -91,6 +91,10 @@ export type ChecklistRow = {
   pendente: boolean;
   anexo_nome: string | null;
   anexo_path: string | null;
+  anexo_tamanho: number | null;
+  anexo_tipo: string | null;
+  anexo_enviado_em: string | null;
+  anexo_enviado_por: string | null;
   updated_at: string;
   updated_by: string | null;
 }

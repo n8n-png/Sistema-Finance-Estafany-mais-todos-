@@ -43,16 +43,23 @@ credencial, acesso ou decisão.
 
 ---
 
-## 2. Dá para continuar agora, sem depender de ninguém
+## 2. Feito em 06/09
 
-| # | Trabalho | Observação |
+| # | Trabalho | Situação |
 |---|---|---|
-| 1 | **Sync HubSpot → Painel** (Story 4.1) | Token e mapeamento fechados. Escrevo a edge function; só não dá para **testar** sem banco de pé |
-| 2 | **Anexos de documentos** (Story 3.4) | Decidido: o painel é o armazenador. Buckets, upload, download e RLS por etapa |
-| 3 | **MFA para o time do fundo** (Story 2.3, parte) | Opção B confirmada. Falta só escolher o método |
-| 4 | **Login Google** (Story 2.3, parte) | Para o time interno; configuração fica pronta e é ativada no deploy |
-| 5 | **Alerta de divergência na tela** (Story 3.7, resto) | O banco já registra; falta a interface do desembolso |
-| 6 | **Endurecimento de RLS** (Story 2.1, parte 2) | Com o banco novo nascendo do zero, deixa de ser migração de risco |
+| 1 | **Sync HubSpot → Painel** (Story 4.1) | ✅ Implementado — falta executar contra o banco |
+| 5 | **Conferência de depósito na tela** (Story 3.7) | ✅ Implementado |
+
+| 2 | **Anexos de documentos** (Story 3.4) | ✅ Bucket privado, upload, download assinado, RLS herdando a matriz por etapa |
+| 3 | **MFA** (Story 2.3) | ✅ TOTP, com barreira em todas as rotas protegidas |
+| 4 | **Login Google** (Story 2.3) | ✅ Botão na tela de login; imposição de domínio fica no servidor |
+| 6 | **Endurecimento de RLS** (Story 2.1, parte 2) | ✅ Sete tabelas migradas de `is_staff` para `has_any_page_access` |
+| 7 | **Sync Painel → HubSpot** (Story 4.2) | ✅ Implementado, com três camadas contra loop |
+
+## 2b. O que sobrou sem bloqueio
+
+Nada relevante. Todo o trabalho que não depende de credencial, acesso ou decisão
+externa foi executado. O que resta na seção 3 e 4 depende de terceiros.
 
 ---
 
@@ -99,12 +106,12 @@ Nenhum desses bloqueia o trabalho da seção 2 — são refinamentos que entram 
 
 ---
 
-## 6. Verificações de hoje
+## 6. Verificações (06/09)
 
 - `tsc --noEmit` sem erros
 - **38 testes** passando, incluindo os 5 IDs reais da planilha
 - `npm run build` OK
-- **29 migrations** validadas com o parser do PostgreSQL
+- **30 migrations** validadas com o parser do PostgreSQL
 - ESLint sem erros novos
 
 **Ressalva mantida:** nenhuma migration foi **executada** — não há banco nem Docker nesta

@@ -12,6 +12,12 @@ import {
 } from "@/components/ui/collapsible";
 import { Paperclip, Upload, Download, FileArchive, Send, Mail, Search, X, ChevronDown } from "lucide-react";
 import { formatCurrency } from "@/utils/currency";
+import { anexarDocumento, urlDocumento } from "@/services/documentos";
+import {
+  calcularValorLiquidoPrevisto,
+  divergenciaDeposito,
+  houveDivergencia,
+} from "@/utils/operacaoFormulas";
 import { ExportButtons } from "@/components/checklist/ExportButtons";
 import { PeopleCards } from "@/components/checklist/PeopleCards";
 import type { Pessoa } from "@/utils/docFormats";
@@ -59,6 +65,10 @@ export const OperacaoModal = ({
 }: Props) => {
   const [modo, setModo] = useState<null | "falta_doc" | "reprovado">(null);
   const [texto, setTexto] = useState("");
+  /** Valor efetivamente depositado, informado na confirmação do desembolso. */
+  const [valorDepositado, setValorDepositado] = useState("");
+  /** Id do item cujo upload está em andamento. */
+  const [enviando, setEnviando] = useState<string | null>(null);
   const [usuarios, setUsuarios] = useState<UsuarioCadastrado[]>([]);
   const [erroUsuarios, setErroUsuarios] = useState(false);
   const [buscaEmail, setBuscaEmail] = useState("");
@@ -106,17 +116,68 @@ export const OperacaoModal = ({
       checklist: op.checklist.map((c) => (c.id === id ? { ...c, [campo]: !c[campo] } : c)),
     });
 
-  const anexarMock = (id: string) =>
-    // TODO: integração real aqui — abrir picker do Drive/SharePoint e salvar a referência do arquivo.
-    onChange({
-      ...op,
-      checklist: op.checklist.map((c) => (c.id === id ? { ...c, anexoNome: `anexo-${id}.pdf` } : c)),
-    });
+  /**
+   * Envio do documento de um item do checklist — Story 3.4.
+   *
+   * O arquivo vai para o bucket privado sob `{operacao_id}/`, o que faz a
+   * permissão dele herdar a matriz de acesso por etapa da operação. Marcar o
+   * item como concluído é consequência do envio, não uma ação separada: um item
+   * com documento anexado está, por definição, atendido.
+   */
+  const anexarItem = async (id: string, arquivo: File) => {
+    setEnviando(id);
+    try {
+      const resultado = await anexarDocumento(op.id, id, arquivo);
+      onChange({
+        ...op,
+        checklist: op.checklist.map((c) =>
+          c.id === id
+            ? {
+                ...c,
+                checked: true,
+                anexoNome: resultado.nome,
+                anexoPath: resultado.path,
+                anexoTamanho: resultado.tamanho,
+                anexoTipo: resultado.tipo,
+                anexoEnviadoEm: new Date().toISOString(),
+              }
+            : c,
+        ),
+      });
+      toast({ title: "Documento anexado", description: resultado.nome });
+    } catch (err: unknown) {
+      toast({
+        title: "Não foi possível anexar",
+        description: err instanceof Error ? err.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setEnviando(null);
+    }
+  };
 
+  /**
+   * Abre o documento numa aba nova.
+   *
+   * A URL é assinada e expira em uma hora — o bucket é privado e não existe
+   * endereço permanente. Link permanente de documento de crédito é link que vaza.
+   */
   const baixarItem = async (id: string) => {
-    // TODO: integração real aqui — baixar o arquivo do storage.
-    const nome = await baixarAnexo(op, id);
-    console.info("[mock] download", nome);
+    const item = op.checklist.find((c) => c.id === id);
+    if (!item?.anexoPath) {
+      toast({ title: "Nenhum documento anexado neste item", variant: "destructive" });
+      return;
+    }
+    try {
+      const url = await urlDocumento(item.anexoPath);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (err: unknown) {
+      toast({
+        title: "Não foi possível abrir o documento",
+        description: err instanceof Error ? err.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   const baixarTudo = async () => {
@@ -138,9 +199,22 @@ export const OperacaoModal = ({
     onChange(atualizado);
   };
 
+  /**
+   * Confirmação do desembolso.
+   *
+   * O valor depositado é obrigatório aqui — e não em outro lugar — porque este é
+   * o momento em que a informação existe. Foi a ausência dessa conferência que
+   * deixou passar o depósito errado da Valora em 03/09/2026: confundiram o valor
+   * da TAC com o valor da operação e ninguém percebeu na hora.
+   */
   const uploadComprovante = async () => {
     const nome = `comprovante-${op.id}.pdf`;
     const salvo = await anexarComprovante(op, nome);
+    const depositado = Number(valorDepositado);
+    onChange({
+      ...op,
+      valorLiquidoDepositado: Number.isFinite(depositado) && depositado > 0 ? depositado : null,
+    });
     onDesembolso(op, salvo);
     fechar();
   };
@@ -464,14 +538,36 @@ export const OperacaoModal = ({
                     Baixar
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => anexarMock(item.id)}
-                    className="flex shrink-0 items-center gap-1 text-xs text-primary underline"
-                  >
-                    <Paperclip className="h-3 w-3" />
-                    {item.anexoNome ?? "Anexar"}
-                  </button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {item.anexoPath && (
+                      <button
+                        type="button"
+                        onClick={() => baixarItem(item.id)}
+                        className="flex items-center gap-1 text-xs text-primary underline"
+                      >
+                        <Download className="h-3 w-3" />
+                        Abrir
+                      </button>
+                    )}
+                    <label className="flex cursor-pointer items-center gap-1 text-xs text-primary underline">
+                      <Paperclip className="h-3 w-3" />
+                      {enviando === item.id
+                        ? "Enviando..."
+                        : (item.anexoNome ?? "Anexar")}
+                      <input
+                        type="file"
+                        className="hidden"
+                        disabled={enviando !== null}
+                        onChange={(e) => {
+                          const arquivo = e.target.files?.[0];
+                          // Limpa o valor para permitir reenviar o mesmo arquivo
+                          // depois de um erro — sem isso o onChange não dispara.
+                          e.target.value = "";
+                          if (arquivo) void anexarItem(item.id, arquivo);
+                        }}
+                      />
+                    </label>
+                  </div>
                 )}
                 {modo === "falta_doc" && (
                   <label className="flex shrink-0 items-center gap-1 text-xs text-brand-gray">
@@ -767,12 +863,94 @@ export const OperacaoModal = ({
           <section className="space-y-2 border-t border-border pt-4">
             <h3 className="text-sm font-display font-extrabold text-primary">Desembolso</h3>
             {op.etapa === "contrato_assinado" && (
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={uploadComprovante}>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Anexar comprovante de pagamento
-                </Button>
-                <Button onClick={uploadComprovante}>Pago</Button>
+              <>
+                <div className="rounded-md border border-border bg-muted/40 p-3">
+                  <dl className="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                      <dt className="text-brand-gray">Valor bruto</dt>
+                      <dd className="font-bold">{formatCurrency(op.valorBruto)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-brand-gray">TAC</dt>
+                      <dd className="font-bold">{formatCurrency(op.valorTac)}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-brand-gray">Deve ser depositado</dt>
+                      <dd className="font-bold text-primary">
+                        {formatCurrency(calcularValorLiquidoPrevisto(op.valorBruto, op.valorTac))}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="op-depositado" className="text-brand-gray">
+                    Valor efetivamente depositado (R$)
+                  </Label>
+                  <Input
+                    id="op-depositado"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={valorDepositado}
+                    onChange={(e) => setValorDepositado(e.target.value)}
+                    placeholder={String(calcularValorLiquidoPrevisto(op.valorBruto, op.valorTac))}
+                  />
+                </div>
+
+                {/*
+                  O alerta aparece ANTES de confirmar, não depois. Conferir
+                  depois de registrado é o que já acontecia na planilha — e foi
+                  assim que o erro passou.
+                */}
+                {valorDepositado !== "" &&
+                  Number.isFinite(Number(valorDepositado)) &&
+                  houveDivergencia(
+                    calcularValorLiquidoPrevisto(op.valorBruto, op.valorTac),
+                    Number(valorDepositado),
+                  ) && (
+                    <div className="rounded-md border-l-4 border-destructive bg-destructive/10 p-3">
+                      <p className="text-sm font-bold text-destructive">
+                        Atenção: o valor depositado não confere
+                      </p>
+                      <p className="mt-1 text-xs text-brand-gray">
+                        Diferença de{" "}
+                        <strong>
+                          {formatCurrency(
+                            Math.abs(
+                              divergenciaDeposito(
+                                calcularValorLiquidoPrevisto(op.valorBruto, op.valorTac),
+                                Number(valorDepositado),
+                              ),
+                            ),
+                          )}
+                        </strong>{" "}
+                        em relação ao previsto. Confira antes de confirmar — a divergência fica
+                        registrada no histórico da operação.
+                      </p>
+                    </div>
+                  )}
+
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" onClick={uploadComprovante}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Anexar comprovante de pagamento
+                  </Button>
+                  <Button onClick={uploadComprovante}>Pago</Button>
+                </div>
+              </>
+            )}
+
+            {op.etapa === "desembolsado" && op.valorLiquidoDepositado != null && (
+              <div className="rounded-md border border-border bg-muted/40 p-3 text-xs">
+                <span className="text-brand-gray">Depositado: </span>
+                <strong>{formatCurrency(op.valorLiquidoDepositado)}</strong>
+                {houveDivergencia(op.valorLiquidoPrevisto, op.valorLiquidoDepositado) && (
+                  <span className="ml-2 font-bold text-destructive">
+                    (divergente do previsto:{" "}
+                    {formatCurrency(op.valorLiquidoPrevisto)})
+                  </span>
+                )}
               </div>
             )}
 

@@ -34,8 +34,11 @@ export interface ChecklistItem {
   checked: boolean;
   pendente?: boolean;
   anexoNome?: string | null;
-  /** Caminho no Storage. Preenchido pela Story 3.4. */
+  /** Caminho no Storage, no formato {operacao_id}/{arquivo}. */
   anexoPath?: string | null;
+  anexoTamanho?: number | null;
+  anexoTipo?: string | null;
+  anexoEnviadoEm?: string | null;
 }
 
 export interface Movimentacao {

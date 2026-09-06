@@ -46,6 +46,9 @@ const toChecklist = (rows: ChecklistRow[]): ChecklistItem[] =>
       pendente: r.pendente,
       anexoNome: r.anexo_nome,
       anexoPath: r.anexo_path,
+      anexoTamanho: r.anexo_tamanho,
+      anexoTipo: r.anexo_tipo,
+      anexoEnviadoEm: r.anexo_enviado_em,
     }));
 
 const toSignatarios = (rows: SignatarioRow[]): Signatario[] =>

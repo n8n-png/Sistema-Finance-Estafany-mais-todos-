@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { usePageAccess } from "@/hooks/usePageAccess";
+import { MfaGate } from "@/components/auth/MfaGate";
 
 interface Props {
   children: ReactNode;
@@ -25,5 +26,8 @@ export const ProtectedRoute = ({ children, requireAdmin, pageKey }: Props) => {
   if (requireAdmin && !isAdmin) return <Navigate to="/" replace />;
   if (pageKey && !hasAccess) return <Navigate to="/" replace />;
 
-  return <>{children}</>;
+  // O segundo fator envolve TODAS as rotas protegidas — inclusive as que forem
+  // criadas depois. Colocar a verificação dentro de cada tela seria garantir que
+  // uma tela nova nasça desprotegida.
+  return <MfaGate>{children}</MfaGate>;
 };

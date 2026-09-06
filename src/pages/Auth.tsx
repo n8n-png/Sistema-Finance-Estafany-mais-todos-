@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
 import logo from "@/assets/maistodos-logo.png";
 import { REQUISITOS_SENHA, validarNovaSenha } from "@/utils/passwordPolicy";
+import { entrarComGoogle } from "@/services/mfa";
 
 /** Extrai a mensagem de um erro desconhecido sem recorrer a `any`. */
 const mensagemErro = (err: unknown, padrao: string) =>
@@ -119,6 +120,26 @@ const Auth = () => {
         variant: "destructive",
       });
     } finally {
+      setSubmitting(false);
+    }
+  };
+
+  /**
+   * Login pelo Google — time interno da MaisTODOS.
+   *
+   * O time do fundo (Valora) usa Outlook e entra por e-mail e senha com segundo
+   * fator (decisão de 04/09), por isso os dois caminhos convivem nesta tela.
+   */
+  const handleGoogle = async () => {
+    setSubmitting(true);
+    try {
+      await entrarComGoogle();
+    } catch (err: unknown) {
+      toast({
+        title: "Não foi possível entrar com o Google",
+        description: mensagemErro(err, "Tente novamente ou use e-mail e senha."),
+        variant: "destructive",
+      });
       setSubmitting(false);
     }
   };
@@ -244,6 +265,25 @@ const Auth = () => {
                 <Button type="submit" variant="gradient" className="w-full" disabled={submitting}>
                   {submitting ? "Aguarde..." : "Entrar"}
                 </Button>
+
+                <div className="flex items-center gap-3 py-1">
+                  <span className="h-px flex-1 bg-border" />
+                  <span className="text-xs text-muted-foreground">ou</span>
+                  <span className="h-px flex-1 bg-border" />
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleGoogle}
+                  disabled={submitting}
+                >
+                  Entrar com Google
+                </Button>
+                <p className="text-center text-xs text-muted-foreground">
+                  Use o Google com a conta MaisTODOS. O time do fundo entra com e-mail e senha.
+                </p>
               </form>
             )}
 
