@@ -8,6 +8,7 @@
 
 import { dbFunil } from "@/integrations/supabase/funil";
 import type {
+  AnexoRow,
   ChecklistRow,
   HistoricoRow,
   OperacaoRow,
@@ -35,8 +36,15 @@ const toAlerta = (row: OperacaoRow): Operacao["alerta"] => {
   };
 };
 
-const toChecklist = (rows: ChecklistRow[]): ChecklistItem[] =>
-  rows
+const toChecklist = (rows: ChecklistRow[], anexos: AnexoRow[]): ChecklistItem[] => {
+  const porItem = new Map<string, AnexoRow[]>();
+  for (const a of anexos) {
+    const lista = porItem.get(a.item_checklist_id);
+    if (lista) lista.push(a);
+    else porItem.set(a.item_checklist_id, [a]);
+  }
+
+  return rows
     .slice()
     .sort((a, b) => a.ordem - b.ordem)
     .map((r) => ({
@@ -44,12 +52,19 @@ const toChecklist = (rows: ChecklistRow[]): ChecklistItem[] =>
       label: r.label,
       checked: r.checked,
       pendente: r.pendente,
-      anexoNome: r.anexo_nome,
-      anexoPath: r.anexo_path,
-      anexoTamanho: r.anexo_tamanho,
-      anexoTipo: r.anexo_tipo,
-      anexoEnviadoEm: r.anexo_enviado_em,
+      anexos: (porItem.get(r.id) ?? [])
+        .sort((a, b) => a.enviado_em.localeCompare(b.enviado_em))
+        .map((a) => ({
+          id: a.id,
+          descricao: a.descricao,
+          nomeArquivo: a.nome_arquivo,
+          path: a.path,
+          tamanho: a.tamanho,
+          tipo: a.tipo,
+          enviadoEm: a.enviado_em,
+        })),
     }));
+};
 
 const toSignatarios = (rows: SignatarioRow[]): Signatario[] =>
   rows
@@ -89,6 +104,7 @@ const toPessoas = (rows: PessoaRow[], papel: PessoaRow["papel"]) =>
 const montarOperacao = (
   row: OperacaoRow,
   checklist: ChecklistRow[],
+  anexos: AnexoRow[],
   signatarios: SignatarioRow[],
   pessoas: PessoaRow[],
   historico: HistoricoRow[],
@@ -114,7 +130,7 @@ const montarOperacao = (
   etapa: row.etapa,
   dataEntradaFunil: row.data_entrada_funil,
   dataEntradaEtapa: row.data_entrada_etapa,
-  checklist: toChecklist(checklist),
+  checklist: toChecklist(checklist, anexos),
   signatarios: toSignatarios(signatarios),
   dadosRepresentantes: toPessoas(pessoas, "representante"),
   dadosAvalistas: toPessoas(pessoas, "avalista"),
@@ -152,7 +168,7 @@ const porOperacao = <T extends { operacao_id: string }>(rows: T[]) => {
  * e cada consulta permanece simples de auditar.
  */
 export const listarOperacoesDb = async (): Promise<Operacao[]> => {
-  const [ops, checklist, signatarios, pessoas, historico] = await Promise.all([
+  const [ops, checklist, anexos, signatarios, pessoas, historico] = await Promise.all([
     // Arquivadas ficam fora do quadro — a área pediu que a operação perdida
     // "suma do painel". O registro continua no banco (ver migration 20260904).
     dbFunil
@@ -161,15 +177,18 @@ export const listarOperacoesDb = async (): Promise<Operacao[]> => {
       .eq("arquivada", false)
       .order("data_entrada_funil", { ascending: false }),
     dbFunil.from("operacoes_formalizacao_checklist").select("*"),
+    dbFunil.from("operacoes_formalizacao_anexos").select("*"),
     dbFunil.from("operacoes_formalizacao_signatarios").select("*"),
     dbFunil.from("operacoes_formalizacao_pessoas").select("*"),
     dbFunil.from("operacoes_formalizacao_historico").select("*"),
   ]);
 
-  const erro = ops.error ?? checklist.error ?? signatarios.error ?? pessoas.error ?? historico.error;
+  const erro =
+    ops.error ?? checklist.error ?? anexos.error ?? signatarios.error ?? pessoas.error ?? historico.error;
   if (erro) throw erro;
 
   const porChecklist = porOperacao(checklist.data ?? []);
+  const porAnexo = porOperacao(anexos.data ?? []);
   const porSignatario = porOperacao(signatarios.data ?? []);
   const porPessoa = porOperacao(pessoas.data ?? []);
   const porHistorico = porOperacao(historico.data ?? []);
@@ -178,6 +197,7 @@ export const listarOperacoesDb = async (): Promise<Operacao[]> => {
     montarOperacao(
       row,
       porChecklist.get(row.id) ?? [],
+      porAnexo.get(row.id) ?? [],
       porSignatario.get(row.id) ?? [],
       porPessoa.get(row.id) ?? [],
       porHistorico.get(row.id) ?? [],
@@ -258,7 +278,6 @@ export const salvarOperacaoDb = async (op: Operacao): Promise<Operacao> => {
           .update({
             checked: item.checked,
             pendente: item.pendente ?? false,
-            anexo_nome: item.anexoNome ?? null,
           })
           .eq("id", item.id),
       ),

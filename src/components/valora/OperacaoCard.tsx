@@ -72,7 +72,7 @@ export const OperacaoCard = ({ op, onClick }: { op: Operacao; onClick: () => voi
 
       <div className="mb-1.5 flex min-w-0 flex-wrap gap-1">
         <span className={`crm-pill ${linhaClass[op.linha]}`}>{op.linha}</span>
-        {/* Fundo responsável — TODO: integração real com HubSpot aqui. */}
+        {/* Fundo responsável — hoje só existe o FIDC MaisTODOS (Valora). */}
         <span className="crm-pill border border-border text-muted-foreground">{op.fundo}</span>
         {/* CNPJ presente na base de pré-aprovados. */}
         {preAprovado && <span className="crm-pill bg-sla-ok text-primary-foreground">MVP</span>}

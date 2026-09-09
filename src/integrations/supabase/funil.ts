@@ -89,14 +89,22 @@ export type ChecklistRow = {
   label: string;
   checked: boolean;
   pendente: boolean;
-  anexo_nome: string | null;
-  anexo_path: string | null;
-  anexo_tamanho: number | null;
-  anexo_tipo: string | null;
-  anexo_enviado_em: string | null;
-  anexo_enviado_por: string | null;
   updated_at: string;
   updated_by: string | null;
+}
+
+/** Anexos do checklist — vários por item (Story 3.9). */
+export type AnexoRow = {
+  id: string;
+  operacao_id: string;
+  item_checklist_id: string;
+  descricao: string | null;
+  nome_arquivo: string;
+  path: string;
+  tamanho: number | null;
+  tipo: string | null;
+  enviado_em: string;
+  enviado_por: string | null;
 }
 
 export type SignatarioRow = {
@@ -169,6 +177,7 @@ export type FunilDatabase = {
       PublicSchema["Tables"] & {
         operacoes_formalizacao: Tabela<OperacaoRow>;
         operacoes_formalizacao_checklist: Tabela<ChecklistRow>;
+        operacoes_formalizacao_anexos: Tabela<AnexoRow>;
         operacoes_formalizacao_signatarios: Tabela<SignatarioRow>;
         operacoes_formalizacao_pessoas: Tabela<PessoaRow>;
         operacoes_formalizacao_historico: Tabela<HistoricoRow>;

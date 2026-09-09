@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,6 @@ import { OperacaoCard } from "@/components/valora/OperacaoCard";
 import { OperacaoModal } from "@/components/valora/OperacaoModal";
 import {
   ETAPAS,
-  criarPastaDocumentos,
   listarOperacoes,
   moverEtapa,
   registrarMovimentacao,
@@ -27,10 +26,35 @@ const OperacoesValora = () => {
   const [ate, setAte] = useState("");
   const [busca, setBusca] = useState("");
 
-  useEffect(() => {
-    // TODO: integração real aqui — trocar o mock por fetch no backend/HubSpot.
-    listarOperacoes().then(setOperacoes);
+  /**
+   * Estado do carregamento.
+   *
+   * Existe porque a falha silenciosa aqui é perigosa: sem isso, um erro ao
+   * buscar as operações mostrava um quadro vazio — e quadro vazio, num painel
+   * de esteira, se lê como "não há nada pendente". Alguém pode ir embora
+   * achando que o dia está limpo enquanto há operações estouradas de SLA.
+   */
+  const [carga, setCarga] = useState<"carregando" | "pronto" | "erro">("carregando");
+  const [erroCarga, setErroCarga] = useState<string | null>(null);
+
+  const carregar = useCallback(async () => {
+    setCarga("carregando");
+    setErroCarga(null);
+    try {
+      setOperacoes(await listarOperacoes());
+      setCarga("pronto");
+    } catch (err: unknown) {
+      console.error("[operacoes] falha ao carregar o funil", err);
+      setErroCarga(
+        err instanceof Error && err.message ? err.message : "Não foi possível carregar as operações.",
+      );
+      setCarga("erro");
+    }
   }, []);
+
+  useEffect(() => {
+    void carregar();
+  }, [carregar]);
 
   const selecionada = operacoes.find((o) => o.id === selecionadaId) ?? null;
 
@@ -91,7 +115,6 @@ const OperacoesValora = () => {
         },
         `Falta documentação — devolvido para recolhimento: ${texto ?? ""}`
       );
-      void criarPastaDocumentos(novo);
       void salvarENotificar(novo, "falta_documentacao", texto);
       return;
     }
@@ -225,6 +248,38 @@ const OperacoesValora = () => {
           </div>
         </div>
 
+        {carga === "carregando" && (
+          <div className="rounded-lg border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
+            Carregando operações...
+          </div>
+        )}
+
+        {carga === "erro" && (
+          <div className="rounded-lg border-l-4 border-destructive bg-destructive/10 p-6">
+            <p className="text-sm font-bold text-destructive">
+              Não foi possível carregar as operações
+            </p>
+            <p className="mt-1 text-xs text-brand-gray">
+              {erroCarga} O quadro abaixo está vazio por causa dessa falha — não porque não
+              existam operações.
+            </p>
+            <Button variant="outline" size="sm" className="mt-3" onClick={() => void carregar()}>
+              Tentar de novo
+            </Button>
+          </div>
+        )}
+
+        {carga === "pronto" && operacoes.length === 0 && (
+          <div className="rounded-lg border border-dashed border-border py-16 text-center">
+            <p className="text-sm font-semibold text-foreground">Nenhuma operação em formalização</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              As operações entram automaticamente quando chegam à etapa de recolhimento de
+              documentos no HubSpot.
+            </p>
+          </div>
+        )}
+
+        {carga === "pronto" && operacoes.length > 0 && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
           {colunas.map((etapa) => {
             const cards = visiveis.filter((o) => o.etapa === etapa.id);
@@ -255,6 +310,7 @@ const OperacoesValora = () => {
             );
           })}
         </div>
+        )}
       </div>
 
       <OperacaoModal

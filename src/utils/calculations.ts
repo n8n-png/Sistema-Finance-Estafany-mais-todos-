@@ -420,7 +420,7 @@ export const calculateRecebiveis = (input: CalculationInput): CalculationResult 
   const custoEmissaoTotal = Math.max(valorBruto - valor, 345); // piso R$ 345
   const custoEstruturacao = custoEmissaoTotal;
 
-  let totalFinanciamento = valor + custoEmissaoTotal;
+  const totalFinanciamento = valor + custoEmissaoTotal;
   let saldo = totalFinanciamento;
 
   let parcelaRegular = 0; // só será definida quando necessário
@@ -436,7 +436,7 @@ export const calculateRecebiveis = (input: CalculationInput): CalculationResult 
   const chartData: number[] = [];
 
   // Data do contrato
-  let dataContratoObj = new Date(dataContrato);
+  const dataContratoObj = new Date(dataContrato);
   dataContratoObj.setHours(0,0,0,0);
   let dataAtual = new Date(dataContratoObj);
   dataAtual.setHours(0,0,0,0);
@@ -453,7 +453,7 @@ export const calculateRecebiveis = (input: CalculationInput): CalculationResult 
       nextMonthIndex = 0;
       nextYear += 1;
     }
-    let dataProxima = new Date(nextYear, nextMonthIndex, 15);
+    const dataProxima = new Date(nextYear, nextMonthIndex, 15);
     dataProxima.setHours(0,0,0,0);
 
     if (carenciaTotal > 0 && i <= carenciaTotal) {
@@ -463,7 +463,7 @@ export const calculateRecebiveis = (input: CalculationInput): CalculationResult 
 
       // recalcula parcela ao fim da carência total
       if (i === carenciaTotal) {
-        let parcelasRestantes = prazo - carenciaTotal - carenciaPrincipal;
+        const parcelasRestantes = prazo - carenciaTotal - carenciaPrincipal;
         parcelaRegular = (saldo * jurosMensal) / (1 - Math.pow(1 + jurosMensal, -parcelasRestantes));
         // O saldo após carência total é o que precisa ser amortizado
         totalAmortizacao = saldo;
@@ -475,7 +475,7 @@ export const calculateRecebiveis = (input: CalculationInput): CalculationResult 
 
       // se não houver carência total, define parcela ao fim da carência principal
       if (i === carenciaTotal + carenciaPrincipal && parcelaRegular === 0) {
-        let parcelasRestantes = prazo - carenciaTotal - carenciaPrincipal;
+        const parcelasRestantes = prazo - carenciaTotal - carenciaPrincipal;
         parcelaRegular = (saldo * jurosMensal) / (1 - Math.pow(1 + jurosMensal, -parcelasRestantes));
         // Se não teve carência total, a amortização é o saldo atual
         if (totalAmortizacao === 0) totalAmortizacao = saldo;
@@ -487,7 +487,7 @@ export const calculateRecebiveis = (input: CalculationInput): CalculationResult 
       // amortização normal
       // se não teve nenhuma carência, parcela já deve ser definida no início
       if (parcelaRegular === 0) {
-        let parcelasRestantes = prazo - i + 1;
+        const parcelasRestantes = prazo - i + 1;
         parcelaRegular = (saldo * jurosMensal) / (1 - Math.pow(1 + jurosMensal, -parcelasRestantes));
         // Se não teve carência, a amortização é o valor total do financiamento
         if (totalAmortizacao === 0) totalAmortizacao = totalFinanciamento;

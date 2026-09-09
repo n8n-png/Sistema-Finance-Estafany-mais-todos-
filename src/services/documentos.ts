@@ -1,8 +1,12 @@
 /**
- * Documentos da operação — Story 3.4.
+ * Documentos da operação — Stories 3.4 e 3.9.
  *
  * O painel passou a ser o armazenador (decisão de 04/09). O SharePoint continua
  * existindo com o histórico antigo, sem integração: é coexistência, não sincronia.
+ *
+ * Cada item de checklist aceita **vários** documentos (Story 3.9): uma operação
+ * com 3 representantes legais tem 3 identificações no mesmo item, cada uma com
+ * sua descrição.
  *
  * O caminho do arquivo segue sempre `{operacao_id}/{arquivo}`. Essa convenção não
  * é organização — é o que faz a permissão do arquivo herdar automaticamente a
@@ -30,30 +34,45 @@ export const TIPOS_ACEITOS = [
   "application/vnd.ms-excel",
 ] as const;
 
+export interface Anexo {
+  id: string;
+  descricao: string | null;
+  nomeArquivo: string;
+  path: string;
+  tamanho: number | null;
+  tipo: string | null;
+  enviadoEm: string;
+}
+
 /**
- * Normaliza o nome do arquivo.
+ * Normaliza o nome do arquivo para uso no Storage.
  *
- * Acento e espaço em nome de objeto do Storage causam problema na hora de gerar
- * e consumir a URL. O prefixo de tempo evita que dois envios do mesmo documento
- * se sobrescrevam silenciosamente — no lugar disso, ficam os dois e a área
- * decide qual vale.
+ * Três problemas resolvidos aqui:
+ *
+ * 1. **Acento e espaço** atrapalham na geração e no consumo da URL assinada.
+ * 2. **Colisão**: o prefixo de tempo e o sufixo aleatório garantem caminho único
+ *    mesmo quando a mesma pessoa envia dois arquivos de mesmo nome — que é o
+ *    caso das "3 outorgas" saídas do mesmo scanner, todas `documento.pdf`.
+ *    Sem isso, uma sobrescreveria a outra em silêncio.
+ * 3. **Ponto no meio do nome**: a extensão é separada antes da limpeza e todo o
+ *    resto perde os pontos. Isso elimina `..` no nome (que não chega a ser
+ *    travessia de diretório, já que as barras viram hífen, mas é fraqueza sem
+ *    motivo) e torna visível a extensão dupla: `boleto.pdf.exe` vira
+ *    `boleto-pdf.exe`, e o que é executável parece executável.
  */
 export const nomeSeguro = (nomeOriginal: string): string => {
-  const limpo = nomeOriginal
+  const extensao = nomeOriginal.match(/\.[a-zA-Z0-9]{1,10}$/)?.[0] ?? "";
+  const base = nomeOriginal
+    .slice(0, nomeOriginal.length - extensao.length)
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .replace(/[^a-zA-Z0-9_-]/g, "-")
     .replace(/-+/g, "-")
-    .slice(-120);
-  return `${Date.now()}-${limpo}`;
+    .replace(/^-|-$/g, "")
+    .slice(-100);
+  const aleatorio = Math.random().toString(36).slice(2, 8);
+  return `${Date.now()}-${aleatorio}-${base || "documento"}${extensao}`;
 };
-
-export interface ResultadoUpload {
-  path: string;
-  nome: string;
-  tamanho: number;
-  tipo: string;
-}
 
 const validar = (arquivo: File) => {
   if (arquivo.size > TAMANHO_MAXIMO) {
@@ -62,22 +81,53 @@ const validar = (arquivo: File) => {
     );
   }
   if (arquivo.type && !TIPOS_ACEITOS.includes(arquivo.type as (typeof TIPOS_ACEITOS)[number])) {
-    throw new Error(
-      "Tipo de arquivo não aceito. Envie PDF, imagem, Word ou Excel.",
-    );
+    throw new Error("Tipo de arquivo não aceito. Envie PDF, imagem, Word ou Excel.");
   }
 };
 
-/** Envia um documento e vincula ao item de checklist. */
+/** Lista os anexos de uma operação, agrupados por item de checklist. */
+export const listarAnexos = async (operacaoId: string): Promise<Map<string, Anexo[]>> => {
+  const { data, error } = await dbFunil
+    .from("operacoes_formalizacao_anexos")
+    .select("*")
+    .eq("operacao_id", operacaoId)
+    .order("enviado_em", { ascending: true });
+
+  if (error) throw error;
+
+  const porItem = new Map<string, Anexo[]>();
+  for (const linha of data ?? []) {
+    const anexo: Anexo = {
+      id: linha.id,
+      descricao: linha.descricao,
+      nomeArquivo: linha.nome_arquivo,
+      path: linha.path,
+      tamanho: linha.tamanho,
+      tipo: linha.tipo,
+      enviadoEm: linha.enviado_em,
+    };
+    const lista = porItem.get(linha.item_checklist_id);
+    if (lista) lista.push(anexo);
+    else porItem.set(linha.item_checklist_id, [anexo]);
+  }
+  return porItem;
+};
+
+/**
+ * Envia um documento e vincula ao item de checklist.
+ *
+ * A `descricao` é o que permite distinguir três arquivos no mesmo item — sem
+ * ela, "3 outorgas" viram três linhas indistinguíveis.
+ */
 export const anexarDocumento = async (
   operacaoId: string,
   itemChecklistId: string,
   arquivo: File,
-): Promise<ResultadoUpload> => {
+  descricao?: string,
+): Promise<Anexo> => {
   validar(arquivo);
 
-  const nome = nomeSeguro(arquivo.name);
-  const path = `${operacaoId}/${nome}`;
+  const path = `${operacaoId}/${nomeSeguro(arquivo.name)}`;
 
   const { error: erroUpload } = await supabase.storage
     .from(BUCKET_DOCUMENTOS)
@@ -90,33 +140,43 @@ export const anexarDocumento = async (
 
   const { data: sessao } = await supabase.auth.getUser();
 
-  // O item de checklist é atualizado depois do envio, e não antes: se o upload
-  // falhar, o checklist não fica apontando para um arquivo que não existe.
-  const { error: erroVinculo } = await dbFunil
-    .from("operacoes_formalizacao_checklist")
-    .update({
-      anexo_nome: arquivo.name,
-      anexo_path: path,
-      anexo_tamanho: arquivo.size,
-      anexo_tipo: arquivo.type || null,
-      anexo_enviado_em: new Date().toISOString(),
-      anexo_enviado_por: sessao.user?.id ?? null,
-      checked: true,
+  // O registro é criado depois do envio: se o upload falhar, não fica linha
+  // apontando para arquivo inexistente.
+  const { data, error: erroRegistro } = await dbFunil
+    .from("operacoes_formalizacao_anexos")
+    .insert({
+      operacao_id: operacaoId,
+      item_checklist_id: itemChecklistId,
+      descricao: descricao?.trim() || null,
+      nome_arquivo: arquivo.name,
+      path,
+      tamanho: arquivo.size,
+      tipo: arquivo.type || null,
+      enviado_por: sessao.user?.id ?? null,
     })
-    .eq("id", itemChecklistId);
+    .select("*")
+    .single();
 
-  if (erroVinculo) {
-    // Vínculo falhou: remove o arquivo para não deixar órfão ocupando espaço
+  if (erroRegistro) {
+    // Registro falhou: remove o arquivo para não deixar órfão ocupando espaço
     // sem nenhuma referência que permita encontrá-lo depois.
     await supabase.storage.from(BUCKET_DOCUMENTOS).remove([path]);
-    throw erroVinculo;
+    throw erroRegistro;
   }
 
-  return { path, nome: arquivo.name, tamanho: arquivo.size, tipo: arquivo.type };
+  return {
+    id: data.id,
+    descricao: data.descricao,
+    nomeArquivo: data.nome_arquivo,
+    path: data.path,
+    tamanho: data.tamanho,
+    tipo: data.tipo,
+    enviadoEm: data.enviado_em,
+  };
 };
 
 /**
- * Gera uma URL temporária para download.
+ * Gera uma URL temporária para abrir o documento.
  *
  * O bucket é privado, então não existe URL permanente — e é assim que deve ser:
  * link permanente de documento de crédito é link que vaza. A URL expira em uma
@@ -130,32 +190,128 @@ export const urlDocumento = async (path: string, segundos = 3600): Promise<strin
   return data.signedUrl;
 };
 
-/** Remove o anexo de um item de checklist. Só administradores conseguem. */
-export const removerDocumento = async (path: string, itemChecklistId: string): Promise<void> => {
-  const { error } = await supabase.storage.from(BUCKET_DOCUMENTOS).remove([path]);
+/** Corrige a descrição de um anexo já enviado. */
+export const renomearAnexo = async (anexoId: string, descricao: string): Promise<void> => {
+  const { error } = await dbFunil
+    .from("operacoes_formalizacao_anexos")
+    .update({ descricao: descricao.trim() || null })
+    .eq("id", anexoId);
   if (error) throw error;
-
-  const { error: erroVinculo } = await dbFunil
-    .from("operacoes_formalizacao_checklist")
-    .update({
-      anexo_nome: null,
-      anexo_path: null,
-      anexo_tamanho: null,
-      anexo_tipo: null,
-      anexo_enviado_em: null,
-      anexo_enviado_por: null,
-      checked: false,
-    })
-    .eq("id", itemChecklistId);
-
-  if (erroVinculo) throw erroVinculo;
 };
 
-/** Lista os arquivos de uma operação, direto do Storage. */
-export const listarDocumentos = async (operacaoId: string) => {
-  const { data, error } = await supabase.storage
-    .from(BUCKET_DOCUMENTOS)
-    .list(operacaoId, { sortBy: { column: "created_at", order: "desc" } });
+/**
+ * Remove um anexo.
+ *
+ * A ordem importa: o registro sai primeiro. Se a remoção do arquivo falhar,
+ * sobra um arquivo órfão no Storage — desperdício de espaço, mas inofensivo. Na
+ * ordem inversa, uma falha deixaria o checklist apontando para um arquivo que
+ * não existe mais, e aí a operação parece documentada quando não está.
+ */
+export const removerAnexo = async (anexoId: string, path: string): Promise<void> => {
+  const { error } = await dbFunil
+    .from("operacoes_formalizacao_anexos")
+    .delete()
+    .eq("id", anexoId);
   if (error) throw error;
-  return data ?? [];
+
+  const { error: erroArquivo } = await supabase.storage.from(BUCKET_DOCUMENTOS).remove([path]);
+  if (erroArquivo) {
+    console.warn("[documentos] registro removido, arquivo permaneceu no storage", erroArquivo);
+  }
+};
+
+/** Formata o tamanho para exibição. */
+export const formatarTamanho = (bytes: number | null): string => {
+  if (bytes === null) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1_048_576) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / 1_048_576).toFixed(1)} MB`;
+};
+
+/**
+ * Baixa todos os documentos da operação num único .zip.
+ *
+ * O zip é montado **no navegador**, não no servidor: os arquivos já vêm de URLs
+ * assinadas que o usuário tem permissão de acessar, então não há razão para
+ * fazer o dado passar por uma função de servidor só para ser reempacotado.
+ *
+ * Cada arquivo entra com o nome que a pessoa deu ("Outorga da Maria.pdf"), e não
+ * com o nome técnico do Storage — quem recebe o pacote precisa entender o que
+ * está abrindo.
+ */
+export const baixarTudoZip = async (
+  nomeOperacao: string,
+  anexos: { descricao: string | null; nomeArquivo: string; path: string }[],
+): Promise<void> => {
+  if (anexos.length === 0) {
+    throw new Error("Não há documentos anexados nesta operação.");
+  }
+
+  // Import dinâmico: a biblioteca de zip só é baixada por quem clica no botão,
+  // e não entra no carregamento inicial do painel.
+  const { default: JSZip } = await import("jszip");
+  const zip = new JSZip();
+  const usados = new Set<string>();
+
+  for (const anexo of anexos) {
+    const url = await urlDocumento(anexo.path, 300);
+    const resposta = await fetch(url);
+    if (!resposta.ok) {
+      throw new Error(`Falha ao baixar "${anexo.descricao ?? anexo.nomeArquivo}".`);
+    }
+
+    const extensao = anexo.nomeArquivo.match(/\.[^.]+$/)?.[0] ?? "";
+    const base = (anexo.descricao ?? anexo.nomeArquivo.replace(/\.[^.]+$/, ""))
+      .replace(/[/\:*?"<>|]/g, "-")
+      .slice(0, 120);
+
+    // Dois documentos com a mesma descrição sobrescreveriam um ao outro dentro
+    // do zip — silenciosamente, e o pacote sairia incompleto.
+    let nome = `${base}${extensao}`;
+    let n = 2;
+    while (usados.has(nome)) {
+      nome = `${base} (${n})${extensao}`;
+      n++;
+    }
+    usados.add(nome);
+
+    zip.file(nome, await resposta.blob());
+  }
+
+  const blob = await zip.generateAsync({ type: "blob" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = `documentos-${nomeOperacao.replace(/[^a-zA-Z0-9]/g, "-").slice(0, 60)}.zip`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+};
+
+/**
+ * Envia o comprovante de pagamento do desembolso.
+ *
+ * Vai para a mesma pasta da operação, sob o prefixo `comprovante-`, porque a
+ * permissão do arquivo é definida pelo primeiro segmento do caminho — o
+ * comprovante precisa seguir exatamente as mesmas regras de acesso do resto da
+ * documentação da operação.
+ *
+ * Não entra na tabela de anexos: comprovante não é item de checklist, é prova de
+ * que o dinheiro saiu. Fica no campo próprio da operação.
+ */
+export const anexarComprovanteDesembolso = async (
+  operacaoId: string,
+  arquivo: File,
+): Promise<{ path: string; nome: string }> => {
+  validar(arquivo);
+
+  const path = `${operacaoId}/comprovante-${nomeSeguro(arquivo.name)}`;
+
+  const { error } = await supabase.storage.from(BUCKET_DOCUMENTOS).upload(path, arquivo, {
+    contentType: arquivo.type || "application/octet-stream",
+    upsert: false,
+  });
+  if (error) throw error;
+
+  return { path, nome: arquivo.name };
 };

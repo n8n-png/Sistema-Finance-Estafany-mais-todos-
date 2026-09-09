@@ -33,12 +33,23 @@ export interface ChecklistItem {
   label: string;
   checked: boolean;
   pendente?: boolean;
-  anexoNome?: string | null;
-  /** Caminho no Storage, no formato {operacao_id}/{arquivo}. */
-  anexoPath?: string | null;
-  anexoTamanho?: number | null;
-  anexoTipo?: string | null;
-  anexoEnviadoEm?: string | null;
+  /**
+   * Documentos anexados a este item — vários por item (Story 3.9).
+   *
+   * Uma operação com 3 representantes legais tem 3 identificações aqui, cada
+   * uma com sua descrição ("RG do João", "Outorga da Maria").
+   */
+  anexos?: AnexoChecklist[];
+}
+
+export interface AnexoChecklist {
+  id: string;
+  descricao: string | null;
+  nomeArquivo: string;
+  path: string;
+  tamanho: number | null;
+  tipo: string | null;
+  enviadoEm: string;
 }
 
 export interface Movimentacao {

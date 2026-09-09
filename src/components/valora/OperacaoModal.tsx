@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,7 +18,14 @@ import {
 } from "@/components/ui/collapsible";
 import { Paperclip, Upload, Download, FileArchive, Send, Mail, Search, X, ChevronDown } from "lucide-react";
 import { formatCurrency } from "@/utils/currency";
-import { anexarDocumento, urlDocumento } from "@/services/documentos";
+import {
+  anexarComprovanteDesembolso,
+  anexarDocumento,
+  baixarTudoZip,
+  formatarTamanho,
+  removerAnexo,
+  urlDocumento,
+} from "@/services/documentos";
 import {
   calcularValorLiquidoPrevisto,
   divergenciaDeposito,
@@ -25,9 +38,6 @@ import { emptyAs, emptyCdt, type AsState, type CdtState } from "@/utils/checklis
 import { exportAsPDF, exportCdtPDF } from "@/utils/checklistExport";
 import { exportAsDOCX, exportCdtDOCX } from "@/utils/checklistDocx";
 import {
-  anexarComprovante,
-  baixarAnexo,
-  baixarDocumentacaoZip,
   moverEtapa,
   type Operacao,
 } from "@/services/operacoes";
@@ -69,10 +79,33 @@ export const OperacaoModal = ({
   const [valorDepositado, setValorDepositado] = useState("");
   /** Id do item cujo upload está em andamento. */
   const [enviando, setEnviando] = useState<string | null>(null);
+
+  /**
+   * Arquivos aguardando descrição antes de subir.
+   *
+   * A descrição só é pedida quando ela resolve algo: item que vai ficar com mais
+   * de um documento. Pedir sempre viraria atrito nos itens simples — Cartão
+   * CNPJ, Carta Bacen — que têm um arquivo e nome óbvio.
+   */
+  const [filaDescricao, setFilaDescricao] = useState<{
+    itemId: string;
+    arquivos: File[];
+    descricoes: string[];
+  } | null>(null);
   const [usuarios, setUsuarios] = useState<UsuarioCadastrado[]>([]);
   const [erroUsuarios, setErroUsuarios] = useState(false);
   const [buscaEmail, setBuscaEmail] = useState("");
   const [editandoDestinatarios, setEditandoDestinatarios] = useState(false);
+  /**
+   * Todos os hooks ficam aqui, antes do `if (!op) return null` mais abaixo.
+   *
+   * Declarar useState depois de um retorno antecipado faz a quantidade de hooks
+   * variar entre renderizações — o React associa estado por ordem de chamada, e
+   * a ordem mudando significa estado trocado entre hooks. É falha silenciosa:
+   * não quebra na hora, quebra depois, de um jeito difícil de reproduzir.
+   */
+  const [gerandoZip, setGerandoZip] = useState(false);
+  const [enviandoComprovante, setEnviandoComprovante] = useState(false);
   const [checklistAberta, setChecklistAberta] = useState(false);
   const [pessoasAberta, setPessoasAberta] = useState(false);
   const { user } = useAuth();
@@ -124,27 +157,22 @@ export const OperacaoModal = ({
    * item como concluído é consequência do envio, não uma ação separada: um item
    * com documento anexado está, por definição, atendido.
    */
-  const anexarItem = async (id: string, arquivo: File) => {
+  const anexarItem = async (id: string, arquivo: File, descricao?: string) => {
     setEnviando(id);
     try {
-      const resultado = await anexarDocumento(op.id, id, arquivo);
+      const anexo = await anexarDocumento(op.id, id, arquivo, descricao);
       onChange({
         ...op,
         checklist: op.checklist.map((c) =>
           c.id === id
-            ? {
-                ...c,
-                checked: true,
-                anexoNome: resultado.nome,
-                anexoPath: resultado.path,
-                anexoTamanho: resultado.tamanho,
-                anexoTipo: resultado.tipo,
-                anexoEnviadoEm: new Date().toISOString(),
-              }
+            ? { ...c, checked: true, anexos: [...(c.anexos ?? []), anexo] }
             : c,
         ),
       });
-      toast({ title: "Documento anexado", description: resultado.nome });
+      toast({
+        title: "Documento anexado",
+        description: anexo.descricao ? `${anexo.descricao} — ${anexo.nomeArquivo}` : anexo.nomeArquivo,
+      });
     } catch (err: unknown) {
       toast({
         title: "Não foi possível anexar",
@@ -157,19 +185,50 @@ export const OperacaoModal = ({
   };
 
   /**
-   * Abre o documento numa aba nova.
+   * Decide se os arquivos sobem direto ou passam pela tela de descrição.
+   *
+   * Um arquivo num item vazio sobe direto: o nome do arquivo já identifica.
+   * A partir do momento em que o item vai ter mais de um documento, a descrição
+   * passa a ser o que distingue "Outorga da Maria" de "Outorga da Ana".
+   */
+  const receberArquivos = (itemId: string, arquivos: File[]) => {
+    if (arquivos.length === 0) return;
+
+    const jaTem = op.checklist.find((c) => c.id === itemId)?.anexos?.length ?? 0;
+    const ficaraComVarios = jaTem + arquivos.length > 1;
+
+    if (!ficaraComVarios) {
+      void anexarItem(itemId, arquivos[0]);
+      return;
+    }
+
+    setFilaDescricao({
+      itemId,
+      arquivos,
+      // Começa com o nome do arquivo sem extensão: costuma ser um ponto de
+      // partida melhor do que campo vazio.
+      descricoes: arquivos.map((a) => a.name.replace(/\.[^.]+$/, "")),
+    });
+  };
+
+  const confirmarDescricoes = async () => {
+    if (!filaDescricao) return;
+    const { itemId, arquivos, descricoes } = filaDescricao;
+    setFilaDescricao(null);
+    for (let i = 0; i < arquivos.length; i++) {
+      await anexarItem(itemId, arquivos[i], descricoes[i]);
+    }
+  };
+
+  /**
+   * Abre um documento numa aba nova.
    *
    * A URL é assinada e expira em uma hora — o bucket é privado e não existe
    * endereço permanente. Link permanente de documento de crédito é link que vaza.
    */
-  const baixarItem = async (id: string) => {
-    const item = op.checklist.find((c) => c.id === id);
-    if (!item?.anexoPath) {
-      toast({ title: "Nenhum documento anexado neste item", variant: "destructive" });
-      return;
-    }
+  const abrirAnexo = async (path: string) => {
     try {
-      const url = await urlDocumento(item.anexoPath);
+      const url = await urlDocumento(path);
       window.open(url, "_blank", "noopener,noreferrer");
     } catch (err: unknown) {
       toast({
@@ -180,10 +239,47 @@ export const OperacaoModal = ({
     }
   };
 
+  const excluirAnexo = async (itemId: string, anexoId: string, path: string) => {
+    try {
+      await removerAnexo(anexoId, path);
+      onChange({
+        ...op,
+        checklist: op.checklist.map((c) =>
+          c.id === itemId
+            ? { ...c, anexos: (c.anexos ?? []).filter((a) => a.id !== anexoId) }
+            : c,
+        ),
+      });
+      toast({ title: "Documento removido" });
+    } catch (err: unknown) {
+      toast({
+        title: "Não foi possível remover",
+        description: err instanceof Error ? err.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  /**
+   * Baixa toda a documentação da operação num .zip.
+   *
+   * Ganhou utilidade real com a Story 3.9: antes era um arquivo por item, agora
+   * uma operação com 3 representantes legais pode ter mais de dez documentos.
+   */
   const baixarTudo = async () => {
-    // TODO: integração real aqui — gerar e baixar o .zip da documentação.
-    const nome = await baixarDocumentacaoZip(op);
-    console.info("[mock] download zip", nome);
+    const anexos = op.checklist.flatMap((item) => item.anexos ?? []);
+    setGerandoZip(true);
+    try {
+      await baixarTudoZip(op.unidade, anexos);
+    } catch (err: unknown) {
+      toast({
+        title: "Não foi possível gerar o arquivo",
+        description: err instanceof Error ? err.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setGerandoZip(false);
+    }
   };
 
   const simularAssinatura = (sigId: string) => {
@@ -207,16 +303,44 @@ export const OperacaoModal = ({
    * deixou passar o depósito errado da Valora em 03/09/2026: confundiram o valor
    * da TAC com o valor da operação e ninguém percebeu na hora.
    */
-  const uploadComprovante = async () => {
-    const nome = `comprovante-${op.id}.pdf`;
-    const salvo = await anexarComprovante(op, nome);
+  /**
+   * Registra o desembolso.
+   *
+   * O comprovante é opcional no botão "Pago" — há casos em que a confirmação
+   * chega antes do arquivo. O valor depositado, não: é ele que permite detectar
+   * o erro que a Valora cometeu em 03/09.
+   */
+  const registrarDesembolso = async (arquivo?: File) => {
     const depositado = Number(valorDepositado);
-    onChange({
-      ...op,
-      valorLiquidoDepositado: Number.isFinite(depositado) && depositado > 0 ? depositado : null,
-    });
-    onDesembolso(op, salvo);
-    fechar();
+    if (!Number.isFinite(depositado) || depositado <= 0) {
+      toast({
+        title: "Informe o valor depositado",
+        description: "É o que permite conferir se o depósito saiu correto.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setEnviandoComprovante(true);
+    try {
+      let comprovante = op.comprovanteDesembolso ?? null;
+      if (arquivo) {
+        const salvo = await anexarComprovanteDesembolso(op.id, arquivo);
+        comprovante = salvo.path;
+      }
+
+      onChange({ ...op, valorLiquidoDepositado: depositado, comprovanteDesembolso: comprovante });
+      onDesembolso(op, comprovante ?? "");
+      fechar();
+    } catch (err: unknown) {
+      toast({
+        title: "Não foi possível registrar o desembolso",
+        description: err instanceof Error ? err.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setEnviandoComprovante(false);
+    }
   };
 
   const destinatarios = op.destinatarios ?? [];
@@ -462,7 +586,7 @@ export const OperacaoModal = ({
               <div><dt className="text-brand-gray">Unidade</dt><dd className="font-bold">{op.unidade}</dd></div>
               <div><dt className="text-brand-gray">CNPJ</dt><dd className="font-bold">{op.cnpj ?? "—"}</dd></div>
               <div><dt className="text-brand-gray">Linha de crédito</dt><dd className="font-bold">{op.linha}</dd></div>
-              {/* TODO: integração real com HubSpot aqui. */}
+              {/* Linha de crédito: vem do HubSpot no sync (Story 4.1), editável aqui. */}
               <div><dt className="text-brand-gray">Fundo responsável</dt><dd className="font-bold">{op.fundo}</dd></div>
               <div><dt className="text-brand-gray">Valor bruto</dt><dd className="font-bold">{formatCurrency(op.valorBruto)}</dd></div>
               <div><dt className="text-brand-gray">Valor da TAC</dt><dd className="font-bold">{formatCurrency(op.valorTac)}</dd></div>
@@ -503,9 +627,14 @@ export const OperacaoModal = ({
               Checklist de documentação — {op.linha}
             </CollapsibleTrigger>
             {somenteLeituraAnexos && (
-              <Button size="sm" variant="outline" onClick={baixarTudo}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void baixarTudo()}
+                disabled={gerandoZip || op.checklist.every((i) => (i.anexos?.length ?? 0) === 0)}
+              >
                 <FileArchive className="mr-2 h-4 w-4" />
-                Baixar tudo (.zip)
+                {gerandoZip ? "Gerando..." : "Baixar tudo (.zip)"}
               </Button>
             )}
           </div>
@@ -513,70 +642,102 @@ export const OperacaoModal = ({
           <ul className="space-y-1.5">
 
             {op.checklist.map((item) => (
-              <li key={item.id} className="flex items-start gap-2 text-sm">
-                <Checkbox
-                  id={item.id}
-                  checked={item.checked}
-                  onCheckedChange={() => toggleItem(item.id, "checked")}
-                  className="mt-0.5"
-                />
-                <Label htmlFor={item.id} className="flex-1 font-normal leading-snug">
-                  {item.label}
-                  {item.pendente && (
-                    <span className="ml-2 rounded-full bg-brand-magenta px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
-                      Pendente
-                    </span>
-                  )}
-                </Label>
-                {somenteLeituraAnexos ? (
-                  <button
-                    type="button"
-                    onClick={() => baixarItem(item.id)}
-                    className="flex shrink-0 items-center gap-1 text-xs text-primary underline"
-                  >
-                    <Download className="h-3 w-3" />
-                    Baixar
-                  </button>
-                ) : (
-                  <div className="flex shrink-0 items-center gap-2">
-                    {item.anexoPath && (
-                      <button
-                        type="button"
-                        onClick={() => baixarItem(item.id)}
-                        className="flex items-center gap-1 text-xs text-primary underline"
-                      >
-                        <Download className="h-3 w-3" />
-                        Abrir
-                      </button>
+              <li key={item.id} className="space-y-1 text-sm">
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id={item.id}
+                    checked={item.checked}
+                    onCheckedChange={() => toggleItem(item.id, "checked")}
+                    className="mt-0.5"
+                  />
+                  <Label htmlFor={item.id} className="flex-1 font-normal leading-snug">
+                    {item.label}
+                    {item.pendente && (
+                      <span className="ml-2 rounded-full bg-brand-magenta px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                        Pendente
+                      </span>
                     )}
-                    <label className="flex cursor-pointer items-center gap-1 text-xs text-primary underline">
+                    {(item.anexos?.length ?? 0) > 1 && (
+                      <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold text-brand-gray">
+                        {item.anexos!.length} documentos
+                      </span>
+                    )}
+                  </Label>
+
+                  {/*
+                    Vários documentos por item — Story 3.9.
+
+                    Pedido da Lavínia a partir de um caso real: operação com 3
+                    representantes legais e 3 outorgas, todas no mesmo item do
+                    checklist. Antes, cada envio substituía o anterior.
+                  */}
+                  {!somenteLeituraAnexos && (
+                    <label className="flex shrink-0 cursor-pointer items-center gap-1 text-xs text-primary underline">
                       <Paperclip className="h-3 w-3" />
-                      {enviando === item.id
-                        ? "Enviando..."
-                        : (item.anexoNome ?? "Anexar")}
+                      {enviando === item.id ? "Enviando..." : "Anexar"}
                       <input
                         type="file"
                         className="hidden"
+                        multiple
                         disabled={enviando !== null}
                         onChange={(e) => {
-                          const arquivo = e.target.files?.[0];
+                          const arquivos = Array.from(e.target.files ?? []);
                           // Limpa o valor para permitir reenviar o mesmo arquivo
                           // depois de um erro — sem isso o onChange não dispara.
                           e.target.value = "";
-                          if (arquivo) void anexarItem(item.id, arquivo);
+                          // Sequencial, não paralelo: em conexão ruim, uploads
+                          // simultâneos competem entre si e o progresso fica
+                          // impossível de acompanhar.
+                          receberArquivos(item.id, arquivos);
                         }}
                       />
                     </label>
-                  </div>
-                )}
-                {modo === "falta_doc" && (
-                  <label className="flex shrink-0 items-center gap-1 text-xs text-brand-gray">
-                    <Checkbox
-                      checked={!!item.pendente}
-                      onCheckedChange={() => toggleItem(item.id, "pendente")}
-                    />
-                    pendente
-                  </label>
+                  )}
+
+                  {modo === "falta_doc" && (
+                    <label className="flex shrink-0 items-center gap-1 text-xs text-brand-gray">
+                      <Checkbox
+                        checked={!!item.pendente}
+                        onCheckedChange={() => toggleItem(item.id, "pendente")}
+                      />
+                      pendente
+                    </label>
+                  )}
+                </div>
+
+                {(item.anexos?.length ?? 0) > 0 && (
+                  <ul className="ml-6 space-y-1">
+                    {item.anexos!.map((anexo) => (
+                      <li
+                        key={anexo.id}
+                        className="flex items-center gap-2 rounded border border-border bg-muted/30 px-2 py-1 text-xs"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => void abrirAnexo(anexo.path)}
+                          className="flex min-w-0 flex-1 items-center gap-1 text-left text-primary underline"
+                          title={anexo.nomeArquivo}
+                        >
+                          <Download className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{anexo.descricao ?? anexo.nomeArquivo}</span>
+                        </button>
+                        <span className="shrink-0 text-brand-gray">
+                          {formatarTamanho(anexo.tamanho)}
+                        </span>
+                        {!somenteLeituraAnexos && (
+                          <button
+                            type="button"
+                            onClick={() => void excluirAnexo(item.id, anexo.id, anexo.path)}
+                            className="shrink-0 px-1 text-brand-gray hover:text-destructive"
+                            title="Remover documento"
+                            aria-label={`Remover ${anexo.descricao ?? anexo.nomeArquivo}`}
+                          >
+                            ×
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </li>
             ))}
@@ -932,11 +1093,31 @@ export const OperacaoModal = ({
                   )}
 
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={uploadComprovante}>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Anexar comprovante de pagamento
+                  <label className="inline-flex">
+                    <Button variant="outline" asChild disabled={enviandoComprovante}>
+                      <span className="cursor-pointer">
+                        <Upload className="mr-2 h-4 w-4" />
+                        {enviandoComprovante ? "Enviando..." : "Anexar comprovante e registrar"}
+                      </span>
+                    </Button>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,image/*"
+                      disabled={enviandoComprovante}
+                      onChange={(e) => {
+                        const arquivo = e.target.files?.[0];
+                        e.target.value = "";
+                        if (arquivo) void registrarDesembolso(arquivo);
+                      }}
+                    />
+                  </label>
+                  <Button
+                    onClick={() => void registrarDesembolso()}
+                    disabled={enviandoComprovante}
+                  >
+                    Registrar sem comprovante
                   </Button>
-                  <Button onClick={uploadComprovante}>Pago</Button>
                 </div>
               </>
             )}
@@ -955,7 +1136,14 @@ export const OperacaoModal = ({
             )}
 
             {op.comprovanteDesembolso && (
-              <p className="text-xs text-brand-gray">Anexado (mock): {op.comprovanteDesembolso}</p>
+              <button
+                type="button"
+                onClick={() => void abrirAnexo(op.comprovanteDesembolso!)}
+                className="flex items-center gap-1 text-xs text-primary underline"
+              >
+                <Download className="h-3 w-3" />
+                Abrir comprovante de pagamento
+              </button>
             )}
           </section>
         )}
@@ -980,6 +1168,62 @@ export const OperacaoModal = ({
           </ul>
         </details>
       </DialogContent>
+
+      {/*
+        Nomear cada documento — Story 3.9.
+
+        Aparece só quando o item vai ficar com mais de um arquivo. É o que
+        permite distinguir "Outorga da Maria" de "Outorga da Ana" na hora em que
+        o fundo confere a documentação.
+      */}
+      <Dialog open={!!filaDescricao} onOpenChange={(aberto) => !aberto && setFilaDescricao(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-primary">Identifique cada documento</DialogTitle>
+          </DialogHeader>
+
+          <p className="text-sm text-muted-foreground">
+            Este item vai ficar com mais de um documento. Dê um nome a cada um para saber
+            de quem é depois — por exemplo, &ldquo;Outorga da Maria&rdquo;.
+          </p>
+
+          <div className="max-h-[50vh] space-y-3 overflow-y-auto">
+            {filaDescricao?.arquivos.map((arquivo, i) => (
+              <div key={`${arquivo.name}-${i}`} className="space-y-1">
+                <Label htmlFor={`descricao-${i}`} className="text-xs text-brand-gray">
+                  {arquivo.name}
+                </Label>
+                <Input
+                  id={`descricao-${i}`}
+                  value={filaDescricao.descricoes[i]}
+                  onChange={(e) =>
+                    setFilaDescricao((atual) =>
+                      atual
+                        ? {
+                            ...atual,
+                            descricoes: atual.descricoes.map((d, j) =>
+                              j === i ? e.target.value : d,
+                            ),
+                          }
+                        : atual,
+                    )
+                  }
+                  placeholder="Ex.: Outorga da Maria"
+                />
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setFilaDescricao(null)}>
+              Cancelar
+            </Button>
+            <Button variant="gradient" onClick={() => void confirmarDescricoes()}>
+              Anexar {filaDescricao?.arquivos.length === 1 ? "documento" : "documentos"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 };

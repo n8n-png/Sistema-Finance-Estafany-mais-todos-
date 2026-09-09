@@ -85,7 +85,7 @@ export const montarChecklist = (linha: LinhaCredito): ChecklistItem[] =>
     label,
     checked: false,
     pendente: false,
-    anexoNome: null,
+    anexos: [],
   }));
 
 let movSeq = 0;
@@ -125,23 +125,14 @@ export const pendentesAssinatura = (op: Operacao): Signatario[] =>
 export const salvarOperacao = async (op: Operacao): Promise<Operacao> => salvarOperacaoDb(op);
 
 /**
- * // Story 3.4 — gerar .zip com todos os anexos da operação e devolver a URL.
- * // Depende da decisão de onde os documentos ficam (Drive/SharePoint/bucket).
+ * Download, upload e remoção de documentos vivem em `services/documentos.ts`
+ * (Stories 3.4 e 3.9). As funções que existiam aqui eram simulações e foram
+ * removidas para não haver dois caminhos possíveis para a mesma coisa.
+ *
+ * Não há mais "criar pasta": o caminho no Storage é derivado do id da operação,
+ * então a pasta passa a existir com o primeiro arquivo. Uma etapa a menos para
+ * dar errado.
  */
-export const baixarDocumentacaoZip = async (op: Operacao): Promise<string> =>
-  `documentacao-${op.id}.zip`;
-
-/** // Story 3.4 — download individual do anexo a partir do Storage. */
-export const baixarAnexo = async (op: Operacao, itemId: string): Promise<string> =>
-  `${op.id}-${itemId}.pdf`;
-
-/**
- * // Story 3.4 — ao entrar em "Recolhimento de documentos", criar a pasta
- * // estruturada da operação. Bloqueado pela decisão de destino dos documentos.
- */
-export const criarPastaDocumentos = async (op: Operacao): Promise<void> => {
-  console.info("[pendente] criar pasta de documentos para", op.unidade);
-};
 
 /**
  * // Story 4.3 — polling da Flixsign (`GetEnvelope`) atualiza o status de cada
@@ -149,10 +140,6 @@ export const criarPastaDocumentos = async (op: Operacao): Promise<void> => {
  * // Depende da credencial de serviço, que é da conta do fundo.
  */
 export const sincronizarAssinaturas = async (op: Operacao): Promise<Signatario[]> => op.signatarios;
-
-/** // Story 3.4 — upload do comprovante de desembolso para o Storage. */
-export const anexarComprovante = async (op: Operacao, nomeArquivo: string): Promise<string> =>
-  nomeArquivo;
 
 /** Aging em dias na etapa atual. */
 export const diasNaEtapa = (op: Operacao): number => {
